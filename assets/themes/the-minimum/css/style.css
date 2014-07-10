@@ -472,6 +472,7 @@ pre {
 }
 .layout-page .tag_box a {
   background-color: #99cc99;
+  color: black;
   float: left;
   border: 1px solid #448844;
   padding: 3px 6px 3px 6px;
@@ -777,7 +778,7 @@ pre {
   }
 }
 /*
-	Not that old computer layout 
+	Not that old computer layout
 */
 @media only screen and (min-width: 1280px) {
   .the-header .unit-inner {
@@ -823,7 +824,7 @@ pre {
   }
 }
 /*
-	Huge-screen layout 
+	Huge-screen layout
 */
 @media only screen and (min-width: 1410px) {
   .the-header .unit-inner {
