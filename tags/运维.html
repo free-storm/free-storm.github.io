@@ -18,7 +18,7 @@
 <meta content='on' http-equiv='cleartype'>
 <meta content='IE=edge,chrome=1' http-equiv='X-UA-Compatible'>
 <link href='opensearch.xml' rel='search' title='自由风暴' type='application/opensearchdescription+xml'>
-<title>自由风暴 - 2015
+<title>自由风暴 - 运维
 </title>
 <link href="/stylesheets/application-6b641459.css" rel="stylesheet" type="text/css" />
 
@@ -100,9 +100,7 @@
 <div class='row'>
 <div class='large-7 columns'>
 <h4>
-<a href='#'>
-2015
-</a>
+<a href='#'>运维</a>
 </h4>
 </div>
 </div>
@@ -110,14 +108,19 @@
 <div class='row main-content'>
 <div class='large-3 large-push-9 small-12 columns'>
 <div class='right-content'>
-<h3>
-2015
-</h3>
+<h3>所有标签</h3>
+<div class='tags'>
+<a class="button secondary round extiny" href="/tags/开发.html">开发</a>
+<a class="button secondary round extiny" href="/tags/效率.html">效率</a>
+<a class="button secondary round extiny" href="/tags/运维.html">运维</a>
+<a class="button secondary round extiny" href="/tags/数据库.html">数据库</a>
+<a class="button secondary round extiny" href="/tags/redis.html">Redis</a>
+</div>
 <hr>
 <ul class='no-bullet media'>
 <li>
 <a href="/feed.xml"><i class='fa fa-rss'></i>
-</a><a href="https://github.com/free-storm/"><i class='fa fa-github'></i>
+</a><a href="https://github.com/free-storm"><i class='fa fa-github'></i>
 </a></li>
 </ul>
 </div>
@@ -153,41 +156,6 @@ Michael Ding
 </div>
 <p class='readmore'>
 <a class="button primary radius small" href="/2015/04/20/setup-docker-registry.html">阅读全文&rarr;</a>
-</p>
-
-<hr>
-<h2><a href="/2015/03/15/Redis-Can-t-save-in-background-fork-Cannot-allocate-memory.html">Redis "Can't save in background: fork: Cannot allocate memory"</a></h2>
-<div class='article-meta'>
-<ul class='no-bullet credit'>
-<li class='date'>
-<i class='fa fa-calendar'></i>
-<a href='/calendar/2015.html'>2015</a>&nbsp;/&nbsp;<a href='/calendar/2015/03.html'>3</a>&nbsp;/&nbsp;<a href='/calendar/2015/03/15.html'>15</a>
-</li>
-<li class='author'>
-<i class='fa fa-user'></i>
-Michael Ding
-</li>
-</ul>
-<div class='tags'>
-<a class="button secondary round extiny" href="/tags/数据库.html">数据库</a>
-<a class="button secondary round extiny" href="/tags/redis.html">Redis</a>
-</div>
-</div>
-<div class='cell markdown'>
-<h2>问题</h2>
-
-<p>默认情况下，redis 的持久化方案是 RDB，对于数据丢失的风险相对较高。
-如果对于持久化要求较高，一般会使用 AOF。</p>
-
-<p>不过使用 AOF 后，正常情况下，总会碰到 <code>Can’t save in background: fork: Cannot allocate memory</code> 这样的错误。</p>
-
-<p>这个错误会出现的原因如下：</p>
-
-<p>Redis 的后台持久化基于操作系统 <code>fork</code> 的 <code>copy-on-write</code>特性。redis 会 fork 一个子进程，这个子进程是
-父进程的完整拷贝。然后这...</p>
-</div>
-<p class='readmore'>
-<a class="button primary radius small" href="/2015/03/15/Redis-Can-t-save-in-background-fork-Cannot-allocate-memory.html">阅读全文&rarr;</a>
 </p>
 
 <hr>
