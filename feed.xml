@@ -5,10 +5,74 @@
   <id>http://freestorm.org/</id>
   <link href="http://freestorm.org/"/>
   <link href="http://freestorm.org/feed.xml" rel="self"/>
-  <updated>2015-04-19T16:00:00+00:00</updated>
+  <updated>2015-04-21T16:00:00+00:00</updated>
   <author>
     <name>自由风暴</name>
   </author>
+  <entry>
+    <title>理解 CAP 理论</title>
+    <link rel="alternate" href="/2015/04/22/理解CAP理论.html"/>
+    <id>/2015/04/22/理解CAP理论.html</id>
+    <published>2015-04-21T16:00:00+00:00</published>
+    <updated>2015-04-21T16:00:00+00:00</updated>
+    <author>
+      <name>Michael Ding</name>
+    </author>
+    <summary type="html">&lt;p&gt;&lt;strong&gt;CAP&lt;/strong&gt; 是分布式数据库中的重要理论之一。为了更好的理解分布式数据库，我们需要对 CAP 理论有个简单的理解。&lt;/p&gt;
+
+&lt;h2&gt;1.CAP 概述&lt;/h2&gt;
+
+&lt;p&gt;&lt;strong&gt;CAP&lt;/strong&gt; 证明了，对于一个分布式数据库系统，存在这样三个指标：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;
+&lt;strong&gt;C&lt;/strong&gt;&lt;em&gt;onsistent&lt;/em&gt;(写操作是 &lt;code&gt;原子&lt;/code&gt; 的，当写操作完成后，所有后续的读取操作获取得到的都必须是新值),&lt;/li&gt;
+&lt;li&gt;
+&lt;strong&gt;A&lt;/strong&gt;&lt;em&gt;vailable&lt;/em&gt;(只要还有一个节点服务器在运行，整个系统对于请求总是要返回结果)&lt;/li&gt;
+&lt;li&gt;
+&lt;strong&gt;P&lt;/strong&gt;&lt;em&gt;artition tolerant&lt;/em&gt;(当节点服务器之间的通信终端后，即：出现网络分区，整个系统还是能提供服务...&lt;/li&gt;
+&lt;/ul&gt;</summary>
+    <content type="html">&lt;p&gt;&lt;strong&gt;CAP&lt;/strong&gt; 是分布式数据库中的重要理论之一。为了更好的理解分布式数据库，我们需要对 CAP 理论有个简单的理解。&lt;/p&gt;
+
+&lt;h2&gt;1.CAP 概述&lt;/h2&gt;
+
+&lt;p&gt;&lt;strong&gt;CAP&lt;/strong&gt; 证明了，对于一个分布式数据库系统，存在这样三个指标：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;C&lt;/strong&gt;&lt;em&gt;onsistent&lt;/em&gt;(写操作是 &lt;code&gt;原子&lt;/code&gt; 的，当写操作完成后，所有后续的读取操作获取得到的都必须是新值),&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;A&lt;/strong&gt;&lt;em&gt;vailable&lt;/em&gt;(只要还有一个节点服务器在运行，整个系统对于请求总是要返回结果)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;P&lt;/strong&gt;&lt;em&gt;artition tolerant&lt;/em&gt;(当节点服务器之间的通信终端后，即：出现网络分区，整个系统还是能提供服务的)。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;而你只能在这三个指标中同时照顾好两个。&lt;/p&gt;
+
+&lt;p&gt;根据 CAP 理论，当你在设计/使用分布式数据库时，你需要做出选择:在 Consistent, Available, Partition tolerant 中放弃什么。&lt;/p&gt;
+
+&lt;p&gt;Partition tolerant 是个架构选择(数据库是否是分布式)，所以一般而言，你需要选择是更在意 Consistent 还是 Available。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;理解 CAP 理论对于做出正确的选择是至关重要的。&lt;/strong&gt;&lt;/p&gt;
+
+&lt;h2&gt;2.更好地理解 CAP&lt;/h2&gt;
+
+&lt;p&gt;&lt;strong&gt;为了更好地理解 CAP，这里以现实生活中的例子做个类比&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;假设这个世界是一个巨大的分布式系统，关于暴走漫画的知识是系统中存储的数据，暴漫的粉丝是这个分布式系统中的一个个节点。&lt;/p&gt;
+
+&lt;p&gt;假设今天你刚刚看了最新一期暴走大事件(第三季43集)，而今天的日期是 &lt;code&gt;2015年4月18日&lt;/code&gt;，突然有一伙儿神秘人闯进你家门，把你抓到了深山里，让你参与建造方舟，并且与世隔绝。&lt;/p&gt;
+
+&lt;p&gt;时光如梭，一转眼 5 年过去了，到了 &lt;code&gt;2020年1月2日&lt;/code&gt;。方舟建成，你被送回了家乡。在回家的路上，你遇到一个路人，问了你一个问题：&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;暴走大事件最新一期是第几季第几集了？&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;这时候，你需要做一个选择：&lt;/p&gt;
+
+&lt;p&gt;你可以回答你知道的最新一期(第三季43集，5年前的最新一期)。如果你选择回答，那你就是 &lt;code&gt;Available&lt;/code&gt; 的。或者你可以选择不回答，因为你已经与世隔绝 5 年，你知道你的答案很可能世界上其余暴漫粉丝的答案不一致(&lt;code&gt;Consistent&lt;/code&gt;)，这样这个路人得不到答案，但是整个世界是 &lt;code&gt;Consistent&lt;/code&gt; 的。&lt;/p&gt;
+
+&lt;p&gt;即：你可以选择确保路人能得到答案(Available)，或者确保世界的一致性(Consistent)。&lt;/p&gt;
+</content>
+  </entry>
   <entry>
     <title>配置自己的 docker-registry 服务</title>
     <link rel="alternate" href="/2015/04/20/setup-docker-registry.html"/>
