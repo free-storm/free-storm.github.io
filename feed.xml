@@ -5,12 +5,57 @@
   <id>http://freestorm.org/</id>
   <link href="http://freestorm.org/"/>
   <link href="http://freestorm.org/feed.xml" rel="self"/>
-  <updated>2015-04-21T16:00:00+00:00</updated>
+  <updated>2015-04-22T16:00:00+00:00</updated>
   <author>
     <name>自由风暴</name>
   </author>
   <entry>
-    <title>理解 CAP 理论</title>
+    <title>Eventual Consistency(最终一致性) - 分布式数据库相关理论 Part 2</title>
+    <link rel="alternate" href="/2015/04/23/Eventual-Consistency(最终一致性).html"/>
+    <id>/2015/04/23/Eventual-Consistency(最终一致性).html</id>
+    <published>2015-04-22T16:00:00+00:00</published>
+    <updated>2015-04-22T16:00:00+00:00</updated>
+    <author>
+      <name>Michael Ding</name>
+    </author>
+    <summary type="html">&lt;h2&gt;1. Eventual Consistency 概述&lt;/h2&gt;
+
+&lt;p&gt;分布式数据库必须要有 &lt;code&gt;分区容忍性(Partition Tolerant)&lt;/code&gt;，所以主要是在 &lt;code&gt;一致性(Consistent)&lt;/code&gt; 和 &lt;code&gt;可用性(Available)&lt;/code&gt; 之间做选择。
+虽然在 CAP 理论中，选择了 &lt;code&gt;Availability&lt;/code&gt; 就不可能得到真正的 &lt;code&gt;Consistency&lt;/code&gt;，但是你可以追求 &lt;code&gt;最终一致性(Evental Consistency)&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;evental Consistency&lt;/code&gt; 背后的思路是：每个系统节点总是 &lt;code&gt;Available&lt;/code&gt; 的，...&lt;/p&gt;</summary>
+    <content type="html">&lt;h2&gt;1. Eventual Consistency 概述&lt;/h2&gt;
+
+&lt;p&gt;分布式数据库必须要有 &lt;code&gt;分区容忍性(Partition Tolerant)&lt;/code&gt;，所以主要是在 &lt;code&gt;一致性(Consistent)&lt;/code&gt; 和 &lt;code&gt;可用性(Available)&lt;/code&gt; 之间做选择。
+虽然在 CAP 理论中，选择了 &lt;code&gt;Availability&lt;/code&gt; 就不可能得到真正的 &lt;code&gt;Consistency&lt;/code&gt;，但是你可以追求 &lt;code&gt;最终一致性(Evental Consistency)&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;evental Consistency&lt;/code&gt; 背后的思路是：每个系统节点总是 &lt;code&gt;Available&lt;/code&gt; 的，同时任何的写(修改数据)操作都会在后台同步给系统的其他节点。
+这意味着，在任意时刻，整个系统是&lt;code&gt;Inconsistent(不一致的)&lt;/code&gt;，然而从概率上讲，大多数的请求得到的值是准确的。&lt;/p&gt;
+
+&lt;p&gt;互联网的 DNS(域名服务) 就是最终一致性的一个非常好的例子。你注册了一个域名，
+这个新域名需要几天的时间才能通知给所有的 DNS 服务器。但是不管什么时候，你能够连接到的任意 DNS 服务器对你来说都是 &amp;lsquo;Available&amp;rsquo; 的。&lt;/p&gt;
+
+&lt;h2&gt;2. Eventual Consistency 小故事&lt;/h2&gt;
+
+&lt;p&gt;让我们接着之前的&lt;a href="/2015/04/22/理解CAP理论.html"&gt;小故事&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;假设你不是深山里，是被抓到一个孤岛上造方舟。&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;2015年7月3日&lt;/code&gt;——距离你被抓来造方舟已经将近3个月，你在孤岛的海边捡到了一个漂流瓶，里面写着：&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;最新一期暴走大事件是第四季第2期&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;所以你知道：最新一期暴走大事件至少是&lt;code&gt;第四季第2期&lt;/code&gt;。&lt;/p&gt;
+
+&lt;p&gt;假设暴漫的粉丝喜欢玩漂流瓶——只要暴走大事件有更新，就会把最新一期的暴走大事件写在纸上，然后通过漂流瓶扔向大海。
+这样，像你这样的被 &lt;code&gt;Partition&lt;/code&gt; 的人，总是能是不是地收到记录着最新一期暴走大事件是什么的漂流瓶。
+换句话说，虽然每一时刻，关于“最新一期暴走大事件是什么”你并不一定知道的是正确的答案，但你总是会 &lt;code&gt;eventually(最终)&lt;/code&gt; 知道正确答案。&lt;/p&gt;
+</content>
+  </entry>
+  <entry>
+    <title>理解 CAP 理论  - 分布式数据库相关理论 Part 1</title>
     <link rel="alternate" href="/2015/04/22/理解CAP理论.html"/>
     <id>/2015/04/22/理解CAP理论.html</id>
     <published>2015-04-21T16:00:00+00:00</published>
@@ -26,11 +71,11 @@
 
 &lt;ul&gt;
 &lt;li&gt;
-&lt;strong&gt;C&lt;/strong&gt;&lt;em&gt;onsistent&lt;/em&gt;(写操作是 &lt;code&gt;原子&lt;/code&gt; 的，当写操作完成后，所有后续的读取操作获取得到的都必须是新值),&lt;/li&gt;
+&lt;strong&gt;C&lt;/strong&gt;&lt;em&gt;onsistent&lt;/em&gt;(一致性。写操作是 &lt;code&gt;原子&lt;/code&gt; 的，当写操作完成后，所有后续的读取操作获取得到的都必须是新值),&lt;/li&gt;
 &lt;li&gt;
-&lt;strong&gt;A&lt;/strong&gt;&lt;em&gt;vailable&lt;/em&gt;(只要还有一个节点服务器在运行，整个系统对于请求总是要返回结果)&lt;/li&gt;
+&lt;strong&gt;A&lt;/strong&gt;&lt;em&gt;vailable&lt;/em&gt;(可用性。只要还有一个节点服务器在运行，整个系统对于请求总是要返回结果)&lt;/li&gt;
 &lt;li&gt;
-&lt;strong&gt;P&lt;/strong&gt;&lt;em&gt;artition tolerant&lt;/em&gt;(当节点服务器之间的通信中断后，即：出现网络分区，整个系统还是能提供服务...&lt;/li&gt;
+&lt;strong&gt;P&lt;/strong&gt;&lt;em&gt;artition tolerant&lt;/em&gt;(分区容忍性。当节点服务器之间的通信中断后，即：出现网络...&lt;/li&gt;
 &lt;/ul&gt;</summary>
     <content type="html">&lt;p&gt;&lt;strong&gt;CAP&lt;/strong&gt; 是分布式数据库中的重要理论之一。为了更好的理解分布式数据库，我们需要对 CAP 理论有个简单的理解。&lt;/p&gt;
 
@@ -39,9 +84,9 @@
 &lt;p&gt;&lt;strong&gt;CAP&lt;/strong&gt; 证明了，对于一个分布式数据库系统，存在这样三个指标：&lt;/p&gt;
 
 &lt;ul&gt;
-&lt;li&gt;&lt;strong&gt;C&lt;/strong&gt;&lt;em&gt;onsistent&lt;/em&gt;(写操作是 &lt;code&gt;原子&lt;/code&gt; 的，当写操作完成后，所有后续的读取操作获取得到的都必须是新值),&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;A&lt;/strong&gt;&lt;em&gt;vailable&lt;/em&gt;(只要还有一个节点服务器在运行，整个系统对于请求总是要返回结果)&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;P&lt;/strong&gt;&lt;em&gt;artition tolerant&lt;/em&gt;(当节点服务器之间的通信中断后，即：出现网络分区，整个系统还是能提供服务的)。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;C&lt;/strong&gt;&lt;em&gt;onsistent&lt;/em&gt;(一致性。写操作是 &lt;code&gt;原子&lt;/code&gt; 的，当写操作完成后，所有后续的读取操作获取得到的都必须是新值),&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;A&lt;/strong&gt;&lt;em&gt;vailable&lt;/em&gt;(可用性。只要还有一个节点服务器在运行，整个系统对于请求总是要返回结果)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;P&lt;/strong&gt;&lt;em&gt;artition tolerant&lt;/em&gt;(分区容忍性。当节点服务器之间的通信中断后，即：出现网络分区，整个系统还是能提供服务的)。&lt;/li&gt;
 &lt;/ul&gt;
 
 &lt;p&gt;而你只能在这三个指标中同时照顾好两个。&lt;/p&gt;
@@ -68,7 +113,7 @@
 
 &lt;p&gt;这时候，你需要做一个选择：&lt;/p&gt;
 
-&lt;p&gt;你可以回答你知道的最新一期(第三季43集，5年前的最新一期)。如果你选择回答，那你就是 &lt;code&gt;Available&lt;/code&gt; 的。或者你可以选择不回答，因为你已经与世隔绝 5 年，你知道你的答案很可能世界上其余暴漫粉丝的答案不一致(&lt;code&gt;Consistent&lt;/code&gt;)，这样这个路人得不到答案，但是整个世界是 &lt;code&gt;Consistent&lt;/code&gt; 的。&lt;/p&gt;
+&lt;p&gt;你可以回答你知道的最新一期(第三季43集，5年前的最新一期)。如果你选择回答，那你就是 &lt;code&gt;Available&lt;/code&gt; 的。或者你可以选择不回答，因为你已经与世隔绝了 5  年，你知道你的答案很可能和世界上其余暴漫粉丝的答案不一致(&lt;code&gt;Consistent&lt;/code&gt;)，这样这个路人得不到答案，但是整个世界是 &lt;code&gt;Consistent&lt;/code&gt; 的。&lt;/p&gt;
 
 &lt;p&gt;即：你可以选择确保路人能得到答案(Available)，或者确保世界的一致性(Consistent)。&lt;/p&gt;
 </content>

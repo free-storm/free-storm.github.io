@@ -18,8 +18,7 @@
 <meta content='on' http-equiv='cleartype'>
 <meta content='IE=edge,chrome=1' http-equiv='X-UA-Compatible'>
 <link href='opensearch.xml' rel='search' title='自由风暴' type='application/opensearchdescription+xml'>
-<title>自由风暴 - 2015-04-22
-</title>
+<title>Eventual Consistency(最终一致性) - 分布式数据库相关理论 Part 2</title>
 <link href="/stylesheets/application-6b641459.css" rel="stylesheet" type="text/css" />
 
 <script src="/javascripts/modernizr-84a49412.js" type="text/javascript"></script>
@@ -100,36 +99,18 @@
 <div class='row'>
 <div class='large-7 columns'>
 <h4>
-<a href='#'>
-2015-04-22
-</a>
+<a href='#'>Eventual Consistency(最终一致性) - 分布式数据库相关理论 Part 2</a>
 </h4>
 </div>
 </div>
 </div>
 <div class='row main-content'>
-<div class='large-3 large-push-9 small-12 columns'>
-<div class='right-content'>
-<h3>
-2015-04-22
-</h3>
-<hr>
-<ul class='no-bullet media'>
-<li>
-<a href="/feed.xml"><i class='fa fa-rss'></i>
-</a><a href="https://github.com/free-storm/"><i class='fa fa-github'></i>
-</a></li>
-</ul>
-</div>
-</div>
-<div class='large-9 large-pull-3 small-12 columns'>
-<div class='right-content'>
-<h2><a href="/2015/04/22/理解CAP理论.html">理解 CAP 理论  - 分布式数据库相关理论 Part 1</a></h2>
+<div class='large-12 columns'>
 <div class='article-meta'>
 <ul class='no-bullet credit'>
 <li class='date'>
 <i class='fa fa-calendar'></i>
-<a href='/calendar/2015.html'>2015</a>&nbsp;/&nbsp;<a href='/calendar/2015/04.html'>4</a>&nbsp;/&nbsp;<a href='/calendar/2015/04/22.html'>22</a>
+<a href='/calendar/2015.html'>2015</a>&nbsp;/&nbsp;<a href='/calendar/2015/04.html'>4</a>&nbsp;/&nbsp;<a href='/calendar/2015/04/23.html'>23</a>
 </li>
 <li class='author'>
 <i class='fa fa-user'></i>
@@ -142,27 +123,61 @@ Michael Ding
 </div>
 </div>
 <div class='cell markdown'>
-<p><strong>CAP</strong> 是分布式数据库中的重要理论之一。为了更好的理解分布式数据库，我们需要对 CAP 理论有个简单的理解。</p>
+<h2>1. Eventual Consistency 概述</h2>
 
-<h2>1.CAP 概述</h2>
+<p>分布式数据库必须要有 <code>分区容忍性(Partition Tolerant)</code>，所以主要是在 <code>一致性(Consistent)</code> 和 <code>可用性(Available)</code> 之间做选择。
+虽然在 CAP 理论中，选择了 <code>Availability</code> 就不可能得到真正的 <code>Consistency</code>，但是你可以追求 <code>最终一致性(Evental Consistency)</code></p>
 
-<p><strong>CAP</strong> 证明了，对于一个分布式数据库系统，存在这样三个指标：</p>
+<p><code>evental Consistency</code> 背后的思路是：每个系统节点总是 <code>Available</code> 的，同时任何的写(修改数据)操作都会在后台同步给系统的其他节点。
+这意味着，在任意时刻，整个系统是<code>Inconsistent(不一致的)</code>，然而从概率上讲，大多数的请求得到的值是准确的。</p>
 
-<ul>
+<p>互联网的 DNS(域名服务) 就是最终一致性的一个非常好的例子。你注册了一个域名，
+这个新域名需要几天的时间才能通知给所有的 DNS 服务器。但是不管什么时候，你能够连接到的任意 DNS 服务器对你来说都是 &lsquo;Available&rsquo; 的。</p>
+
+<h2>2. Eventual Consistency 小故事</h2>
+
+<p>让我们接着之前的<a href="/2015/04/22/理解CAP理论.html">小故事</a>.</p>
+
+<p>假设你不是深山里，是被抓到一个孤岛上造方舟。</p>
+
+<p><code>2015年7月3日</code>——距离你被抓来造方舟已经将近3个月，你在孤岛的海边捡到了一个漂流瓶，里面写着：</p>
+
+<blockquote>
+<p>最新一期暴走大事件是第四季第2期</p>
+</blockquote>
+
+<p>所以你知道：最新一期暴走大事件至少是<code>第四季第2期</code>。</p>
+
+<p>假设暴漫的粉丝喜欢玩漂流瓶——只要暴走大事件有更新，就会把最新一期的暴走大事件写在纸上，然后通过漂流瓶扔向大海。
+这样，像你这样的被 <code>Partition</code> 的人，总是能是不是地收到记录着最新一期暴走大事件是什么的漂流瓶。
+换句话说，虽然每一时刻，关于“最新一期暴走大事件是什么”你并不一定知道的是正确的答案，但你总是会 <code>eventually(最终)</code> 知道正确答案。</p>
+
+</div>
+<div class="bdsharebuttonbox"><a href="#" class="bds_more" data-cmd="more"></a><a href="#" class="bds_weixin" data-cmd="weixin" title="分享到微信"></a><a href="#" class="bds_tsina" data-cmd="tsina" title="分享到新浪微博"></a><a href="#" class="bds_twi" data-cmd="twi" title="分享到Twitter"></a><a href="#" class="bds_fbook" data-cmd="fbook" title="分享到Facebook"></a><a href="#" class="bds_renren" data-cmd="renren" title="分享到人人网"></a><a href="#" class="bds_qzone" data-cmd="qzone" title="分享到QQ空间"></a></div>
+<script>window._bd_share_config={"common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];</script>
+
+<hr>
+<ul class='no-bullet'>
 <li>
-<strong>C</strong><em>onsistent</em>(一致性。写操作是 <code>原子</code> 的，当写操作完成后，所有后续的读取操作获取得到的都必须是新值),</li>
+<a href="/2015/04/22/理解CAP理论.html">较旧一篇: 理解 CAP 理论  - 分布式数据库相关理论 Part 1</a>
+</li>
 <li>
-<strong>A</strong><em>vailable</em>(可用性。只要还有一个节点服务器在运行，整个系统对于请求总是要返回结果)</li>
-<li>
-<strong>P</strong><em>artition tolerant</em>(分区容忍性。当节点服务器之间的通信中断后，即：出现网络...</li>
+&nbsp;
+</li>
 </ul>
-</div>
-<p class='readmore'>
-<a class="button primary radius small" href="/2015/04/22/理解CAP理论.html">阅读全文&rarr;</a>
-</p>
+<div class='ds-thread'></div>
+<script>
+  var duoshuoQuery = {short_name:"freestorm"};
+  (function() {
+  	var ds = document.createElement('script');
+  	ds.type = 'text/javascript';ds.async = true;
+  	ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+  	ds.charset = 'UTF-8';
+  	(document.getElementsByTagName('head')[0]
+  	 || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+</script>
 
-
-</div>
 </div>
 </div>
 
