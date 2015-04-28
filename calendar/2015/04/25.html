@@ -18,7 +18,7 @@
 <meta content='on' http-equiv='cleartype'>
 <meta content='IE=edge,chrome=1' http-equiv='X-UA-Compatible'>
 <link href='opensearch.xml' rel='search' title='自由风暴' type='application/opensearchdescription+xml'>
-<title>自由风暴 - 分布式
+<title>自由风暴 - 2015-04-25
 </title>
 <link href="/stylesheets/application-6b641459.css" rel="stylesheet" type="text/css" />
 
@@ -100,7 +100,9 @@
 <div class='row'>
 <div class='large-7 columns'>
 <h4>
-<a href='#'>分布式</a>
+<a href='#'>
+2015-04-25
+</a>
 </h4>
 </div>
 </div>
@@ -108,20 +110,14 @@
 <div class='row main-content'>
 <div class='large-3 large-push-9 small-12 columns'>
 <div class='right-content'>
-<h3>所有标签</h3>
-<div class='tags'>
-<a class="button secondary round extiny" href="/tags/开发.html">开发</a>
-<a class="button secondary round extiny" href="/tags/效率.html">效率</a>
-<a class="button secondary round extiny" href="/tags/运维.html">运维</a>
-<a class="button secondary round extiny" href="/tags/数据库.html">数据库</a>
-<a class="button secondary round extiny" href="/tags/redis.html">Redis</a>
-<a class="button secondary round extiny" href="/tags/分布式.html">分布式</a>
-</div>
+<h3>
+2015-04-25
+</h3>
 <hr>
 <ul class='no-bullet media'>
 <li>
 <a href="/feed.xml"><i class='fa fa-rss'></i>
-</a><a href="https://github.com/free-storm"><i class='fa fa-github'></i>
+</a><a href="https://github.com/free-storm/"><i class='fa fa-github'></i>
 </a></li>
 </ul>
 </div>
@@ -158,74 +154,6 @@ Michael Ding
 </div>
 <p class='readmore'>
 <a class="button primary radius small" href="/2015/04/25/Riak的分布式数据库模型.html">阅读全文&rarr;</a>
-</p>
-
-<hr>
-<h2><a href="/2015/04/23/Eventual-Consistency(最终一致性).html">Eventual Consistency(最终一致性) - 分布式数据库相关理论 Part 2</a></h2>
-<div class='article-meta'>
-<ul class='no-bullet credit'>
-<li class='date'>
-<i class='fa fa-calendar'></i>
-<a href='/calendar/2015.html'>2015</a>&nbsp;/&nbsp;<a href='/calendar/2015/04.html'>4</a>&nbsp;/&nbsp;<a href='/calendar/2015/04/23.html'>23</a>
-</li>
-<li class='author'>
-<i class='fa fa-user'></i>
-Michael Ding
-</li>
-</ul>
-<div class='tags'>
-<a class="button secondary round extiny" href="/tags/分布式.html">分布式</a>
-<a class="button secondary round extiny" href="/tags/数据库.html">数据库</a>
-</div>
-</div>
-<div class='cell markdown'>
-<h2>1. Eventual Consistency 概述</h2>
-
-<p>分布式数据库必须要有 <code>分区容忍性(Partition Tolerant)</code>，所以主要是在 <code>一致性(Consistent)</code> 和 <code>可用性(Available)</code> 之间做选择。
-虽然在 CAP 理论中，选择了 <code>Availability</code> 就不可能得到真正的 <code>Consistency</code>，但是你可以追求 <code>最终一致性(Evental Consistency)</code></p>
-
-<p><code>evental Consistency</code> 背后的思路是：每个系统节点总是 <code>Available</code> 的，...</p>
-</div>
-<p class='readmore'>
-<a class="button primary radius small" href="/2015/04/23/Eventual-Consistency(最终一致性).html">阅读全文&rarr;</a>
-</p>
-
-<hr>
-<h2><a href="/2015/04/22/理解CAP理论.html">理解 CAP 理论  - 分布式数据库相关理论 Part 1</a></h2>
-<div class='article-meta'>
-<ul class='no-bullet credit'>
-<li class='date'>
-<i class='fa fa-calendar'></i>
-<a href='/calendar/2015.html'>2015</a>&nbsp;/&nbsp;<a href='/calendar/2015/04.html'>4</a>&nbsp;/&nbsp;<a href='/calendar/2015/04/22.html'>22</a>
-</li>
-<li class='author'>
-<i class='fa fa-user'></i>
-Michael Ding
-</li>
-</ul>
-<div class='tags'>
-<a class="button secondary round extiny" href="/tags/分布式.html">分布式</a>
-<a class="button secondary round extiny" href="/tags/数据库.html">数据库</a>
-</div>
-</div>
-<div class='cell markdown'>
-<p><strong>CAP</strong> 是分布式数据库中的重要理论之一。为了更好的理解分布式数据库，我们需要对 CAP 理论有个简单的理解。</p>
-
-<h2>1.CAP 概述</h2>
-
-<p><strong>CAP</strong> 证明了，对于一个分布式数据库系统，存在这样三个指标：</p>
-
-<ul>
-<li>
-<strong>C</strong><em>onsistent</em>(一致性。写操作是 <code>原子</code> 的，当写操作完成后，所有后续的读取操作获取得到的都必须是新值),</li>
-<li>
-<strong>A</strong><em>vailable</em>(可用性。只要还有一个节点服务器在运行，整个系统对于请求总是要返回结果)</li>
-<li>
-<strong>P</strong><em>artition tolerant</em>(分区容忍性。当节点服务器之间的通信中断后，即：出现网络...</li>
-</ul>
-</div>
-<p class='readmore'>
-<a class="button primary radius small" href="/2015/04/22/理解CAP理论.html">阅读全文&rarr;</a>
 </p>
 
 

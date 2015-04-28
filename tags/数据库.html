@@ -128,6 +128,39 @@
 </div>
 <div class='large-9 large-pull-3 small-12 columns'>
 <div class='right-content'>
+<h2><a href="/2015/04/25/Riak的分布式数据库模型.html">Riak 的分布式数据库模型 - 分布式数据库相关理论 Part 3</a></h2>
+<div class='article-meta'>
+<ul class='no-bullet credit'>
+<li class='date'>
+<i class='fa fa-calendar'></i>
+<a href='/calendar/2015.html'>2015</a>&nbsp;/&nbsp;<a href='/calendar/2015/04.html'>4</a>&nbsp;/&nbsp;<a href='/calendar/2015/04/25.html'>25</a>
+</li>
+<li class='author'>
+<i class='fa fa-user'></i>
+Michael Ding
+</li>
+</ul>
+<div class='tags'>
+<a class="button secondary round extiny" href="/tags/分布式.html">分布式</a>
+<a class="button secondary round extiny" href="/tags/数据库.html">数据库</a>
+</div>
+</div>
+<div class='cell markdown'>
+<h2>Riak 是什么</h2>
+
+<p>Riak 是一个 erlang 开发的开源的分布式 key-value 数据库，
+在 <code>High Availability</code>, <code>Fault Tolerance</code>, <code>Scalability</code> 方面表现优异。
+其实现受  <a href="http://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf">Amazon Dynamodb</a> 启发，是一个很有代表性的分布式数据库。</p>
+
+<p>Riak 集群是一个去中心化的集群。每个服务器节点都是平等的，可以自由地添加和删除。
+这使得 Riak 的故障转移(Failure Over)和扩展非常容易。
+在 CAP 理论方面，Riak...</p>
+</div>
+<p class='readmore'>
+<a class="button primary radius small" href="/2015/04/25/Riak的分布式数据库模型.html">阅读全文&rarr;</a>
+</p>
+
+<hr>
 <h2><a href="/2015/04/23/Eventual-Consistency(最终一致性).html">Eventual Consistency(最终一致性) - 分布式数据库相关理论 Part 2</a></h2>
 <div class='article-meta'>
 <ul class='no-bullet credit'>

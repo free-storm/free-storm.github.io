@@ -18,8 +18,7 @@
 <meta content='on' http-equiv='cleartype'>
 <meta content='IE=edge,chrome=1' http-equiv='X-UA-Compatible'>
 <link href='opensearch.xml' rel='search' title='自由风暴' type='application/opensearchdescription+xml'>
-<title>自由风暴 - 分布式
-</title>
+<title>Riak 的分布式数据库模型 - 分布式数据库相关理论 Part 3</title>
 <link href="/stylesheets/application-6b641459.css" rel="stylesheet" type="text/css" />
 
 <script src="/javascripts/modernizr-84a49412.js" type="text/javascript"></script>
@@ -100,35 +99,13 @@
 <div class='row'>
 <div class='large-7 columns'>
 <h4>
-<a href='#'>分布式</a>
+<a href='#'>Riak 的分布式数据库模型 - 分布式数据库相关理论 Part 3</a>
 </h4>
 </div>
 </div>
 </div>
 <div class='row main-content'>
-<div class='large-3 large-push-9 small-12 columns'>
-<div class='right-content'>
-<h3>所有标签</h3>
-<div class='tags'>
-<a class="button secondary round extiny" href="/tags/开发.html">开发</a>
-<a class="button secondary round extiny" href="/tags/效率.html">效率</a>
-<a class="button secondary round extiny" href="/tags/运维.html">运维</a>
-<a class="button secondary round extiny" href="/tags/数据库.html">数据库</a>
-<a class="button secondary round extiny" href="/tags/redis.html">Redis</a>
-<a class="button secondary round extiny" href="/tags/分布式.html">分布式</a>
-</div>
-<hr>
-<ul class='no-bullet media'>
-<li>
-<a href="/feed.xml"><i class='fa fa-rss'></i>
-</a><a href="https://github.com/free-storm"><i class='fa fa-github'></i>
-</a></li>
-</ul>
-</div>
-</div>
-<div class='large-9 large-pull-3 small-12 columns'>
-<div class='right-content'>
-<h2><a href="/2015/04/25/Riak的分布式数据库模型.html">Riak 的分布式数据库模型 - 分布式数据库相关理论 Part 3</a></h2>
+<div class='large-12 columns'>
 <div class='article-meta'>
 <ul class='no-bullet credit'>
 <li class='date'>
@@ -154,82 +131,103 @@ Michael Ding
 
 <p>Riak 集群是一个去中心化的集群。每个服务器节点都是平等的，可以自由地添加和删除。
 这使得 Riak 的故障转移(Failure Over)和扩展非常容易。
-在 CAP 理论方面，Riak...</p>
-</div>
-<p class='readmore'>
-<a class="button primary radius small" href="/2015/04/25/Riak的分布式数据库模型.html">阅读全文&rarr;</a>
-</p>
+在 CAP 理论方面，Riak 可以自由地在 CP 和 AP 之间做平衡。</p>
 
-<hr>
-<h2><a href="/2015/04/23/Eventual-Consistency(最终一致性).html">Eventual Consistency(最终一致性) - 分布式数据库相关理论 Part 2</a></h2>
-<div class='article-meta'>
-<ul class='no-bullet credit'>
-<li class='date'>
-<i class='fa fa-calendar'></i>
-<a href='/calendar/2015.html'>2015</a>&nbsp;/&nbsp;<a href='/calendar/2015/04.html'>4</a>&nbsp;/&nbsp;<a href='/calendar/2015/04/23.html'>23</a>
-</li>
-<li class='author'>
-<i class='fa fa-user'></i>
-Michael Ding
-</li>
-</ul>
-<div class='tags'>
-<a class="button secondary round extiny" href="/tags/分布式.html">分布式</a>
-<a class="button secondary round extiny" href="/tags/数据库.html">数据库</a>
-</div>
-</div>
-<div class='cell markdown'>
-<h2>1. Eventual Consistency 概述</h2>
+<h2>理解 Riak 的分布式数据库模型</h2>
 
-<p>分布式数据库必须要有 <code>分区容忍性(Partition Tolerant)</code>，所以主要是在 <code>一致性(Consistent)</code> 和 <code>可用性(Available)</code> 之间做选择。
-虽然在 CAP 理论中，选择了 <code>Availability</code> 就不可能得到真正的 <code>Consistency</code>，但是你可以追求 <code>最终一致性(Evental Consistency)</code></p>
+<h3>Riak 的数据冗余</h3>
 
-<p><code>evental Consistency</code> 背后的思路是：每个系统节点总是 <code>Available</code> 的，...</p>
-</div>
-<p class='readmore'>
-<a class="button primary radius small" href="/2015/04/23/Eventual-Consistency(最终一致性).html">阅读全文&rarr;</a>
-</p>
+<p>下面还是让我们从简单的例子开始，来理解下 Riak 的分布式数据库模型，包括数据的存储，节点服务器的，CAP理论的关系等。</p>
 
-<hr>
-<h2><a href="/2015/04/22/理解CAP理论.html">理解 CAP 理论  - 分布式数据库相关理论 Part 1</a></h2>
-<div class='article-meta'>
-<ul class='no-bullet credit'>
-<li class='date'>
-<i class='fa fa-calendar'></i>
-<a href='/calendar/2015.html'>2015</a>&nbsp;/&nbsp;<a href='/calendar/2015/04.html'>4</a>&nbsp;/&nbsp;<a href='/calendar/2015/04/22.html'>22</a>
-</li>
-<li class='author'>
-<i class='fa fa-user'></i>
-Michael Ding
-</li>
-</ul>
-<div class='tags'>
-<a class="button secondary round extiny" href="/tags/分布式.html">分布式</a>
-<a class="button secondary round extiny" href="/tags/数据库.html">数据库</a>
-</div>
-</div>
-<div class='cell markdown'>
-<p><strong>CAP</strong> 是分布式数据库中的重要理论之一。为了更好的理解分布式数据库，我们需要对 CAP 理论有个简单的理解。</p>
+<p>首先让我们先定义一个概念：<code>N</code>，表示数据的&quot;份数&quot;。在分布式数据库中，一份数据往往会存储多份拷贝(所谓冗余，或者 replications)</p>
 
-<h2>1.CAP 概述</h2>
+<p>现在，假设我们有一个服务器节点(node1)，存有三个数据(key分别是 P0, P1, P2)，N = 1。那么可以想象，这三个数据都是存放在 node1 中。如下图所示：</p>
 
-<p><strong>CAP</strong> 证明了，对于一个分布式数据库系统，存在这样三个指标：</p>
+<p><img alt="fig1" src="/images/1-node-with-3-data-e7c30ed4.png" /></p>
+
+<p>当 N = 2 时，假设 P0, P1, P2 的冗余数据分别是 R0, R1, R2， 那么可以想象，这6个数据也应该都存储在 node1 中，如 下图所示：</p>
+
+<p><img alt="fig2" src="/images/1-node-with-3x2-data-90719dca.png" /></p>
+
+<p>这时候，让我们把服务器节点增加到2个(node1, node2)，那么可以想象，6个数据有很多中组合方式，例如下面这两种：</p>
+
+<p><img alt="fig3" src="/images/2-node-with-3x2-data-1-3864a6bb.png" /></p>
+
+<p><img alt="fig4" src="/images/2-node-with-3x2-data-2-758f4a81.png" /></p>
+
+<p>也许你发现了，他们有个共同点：<strong>同一个数据的冗余数据放在不同的服务器节点中</strong>。这样就算一个节点删除(当机)了，集群的数据仍然能保证完整性。
+这为故障转移(Failure over)提供了基础。</p>
+
+<p>那么现在的问题来了，<strong>是否有什么科学(公式化)的方式来找到分配这些数据的组合(之一)呢</strong>？</p>
+
+<h3>Riak Ring</h3>
+
+<p>Riak 通过被称作 <code>Riak Ring</code> 的东西来解决这个问题。</p>
+
+<p><strong>首先</strong>，Riak 将所有的 key 通过 hash 函数映射到一个 160 bit 的整数空间中。
+即一个 key 对应着一个 0 ~ 2^160 - 1 的整数。</p>
+
+<p><strong>然后</strong>，Riak 引入了 vnode(虚拟节点) 的概念，vnode 个数是可以配置的，默认是 64。
+160 bit 的整数会均匀的分布到所有的 vnode。</p>
+
+<p><strong>最后</strong>，这些 vnode 会&quot;均匀地&quot;分配到 物理节点上。具体的分配的方法很巧妙，通过 <code>Riak Ring</code> 这样的东西。</p>
+
+<p>下面我们用一幅图来具体解释下 <code>Riak Ring</code>。图中，假设 vnode 32 个，服务器节点 4个。</p>
+
+<p><img alt="fig5" src="/images/riak-ring-99006345.png" /></p>
+
+<p>让我们把 160 bit 想像成一个环，环上的一小段代表一个 vnode。四种颜色分别代表 4 个服务器节点。</p>
+
+<p>2^160 个整数按照从小到大的顺序均匀地分布到 32 个 vnode 中，例如 2^159 是第 17 个 vnode 上的第一个整数。</p>
+
+<p>32 个 vnode 按照从小到大的顺序依次被分配到 4 个服务器节点上。即：</p>
 
 <ul>
-<li>
-<strong>C</strong><em>onsistent</em>(一致性。写操作是 <code>原子</code> 的，当写操作完成后，所有后续的读取操作获取得到的都必须是新值),</li>
-<li>
-<strong>A</strong><em>vailable</em>(可用性。只要还有一个节点服务器在运行，整个系统对于请求总是要返回结果)</li>
-<li>
-<strong>P</strong><em>artition tolerant</em>(分区容忍性。当节点服务器之间的通信中断后，即：出现网络...</li>
+<li>1, 5, 9&hellip;29 vnode 分配给第1个服务器节点(node1)</li>
+<li>2, 6, 10&hellip;30 vnode 分配给第1个服务器节点(node2)</li>
+<li>3, 7, 11&hellip;31 vnode 分配给第1个服务器节点(node3)</li>
+<li>4, 8, 12&hellip;32 vnode 分配给第1个服务器节点(node4)</li>
 </ul>
-</div>
-<p class='readmore'>
-<a class="button primary radius small" href="/2015/04/22/理解CAP理论.html">阅读全文&rarr;</a>
-</p>
 
+<p>现在还剩下一个问题：</p>
+
+<blockquote>
+<p><strong>冗余数据的存储</strong></p>
+</blockquote>
+
+<p>我们先假设 N = 3(即有2份冗余存储)</p>
+
+<p>假设要存储的数据，key 为 <code>test-key</code> ，根据 Riak Ring 算出来，应该存储在 vnode6(即：node2)上。
+那么 拷贝1 存储在 vnode7(即：node3)上，拷贝2 存储在 vnode8(即：node4)上。</p>
+
+<p>所以 Riak 对于冗余数据的存储策略是：<strong>将冗余数据依次存到下一个vnode中</strong>。</p>
 
 </div>
+<div class="bdsharebuttonbox"><a href="#" class="bds_more" data-cmd="more"></a><a href="#" class="bds_weixin" data-cmd="weixin" title="分享到微信"></a><a href="#" class="bds_tsina" data-cmd="tsina" title="分享到新浪微博"></a><a href="#" class="bds_twi" data-cmd="twi" title="分享到Twitter"></a><a href="#" class="bds_fbook" data-cmd="fbook" title="分享到Facebook"></a><a href="#" class="bds_renren" data-cmd="renren" title="分享到人人网"></a><a href="#" class="bds_qzone" data-cmd="qzone" title="分享到QQ空间"></a></div>
+<script>window._bd_share_config={"common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];</script>
+
+<hr>
+<ul class='no-bullet'>
+<li>
+<a href="/2015/04/23/Eventual-Consistency(最终一致性).html">较旧一篇: Eventual Consistency(最终一致性) - 分布式数据库相关理论 Part 2</a>
+</li>
+<li>
+&nbsp;
+</li>
+</ul>
+<div class='ds-thread'></div>
+<script>
+  var duoshuoQuery = {short_name:"freestorm"};
+  (function() {
+  	var ds = document.createElement('script');
+  	ds.type = 'text/javascript';ds.async = true;
+  	ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+  	ds.charset = 'UTF-8';
+  	(document.getElementsByTagName('head')[0]
+  	 || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+</script>
+
 </div>
 </div>
 
