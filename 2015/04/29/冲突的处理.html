@@ -18,7 +18,7 @@
 <meta content='on' http-equiv='cleartype'>
 <meta content='IE=edge,chrome=1' http-equiv='X-UA-Compatible'>
 <link href='opensearch.xml' rel='search' title='自由风暴' type='application/opensearchdescription+xml'>
-<title>Riak 中的 CAP - 分布式数据库相关理论 Part4</title>
+<title>冲突的处理 - 分布式数据库相关理论 Part5</title>
 <link href="/stylesheets/application-6b641459.css" rel="stylesheet" type="text/css" />
 
 <script src="/javascripts/modernizr-84a49412.js" type="text/javascript"></script>
@@ -99,7 +99,7 @@
 <div class='row'>
 <div class='large-7 columns'>
 <h4>
-<a href='#'>Riak 中的 CAP - 分布式数据库相关理论 Part4</a>
+<a href='#'>冲突的处理 - 分布式数据库相关理论 Part5</a>
 </h4>
 </div>
 </div>
@@ -110,7 +110,7 @@
 <ul class='no-bullet credit'>
 <li class='date'>
 <i class='fa fa-calendar'></i>
-<a href='/calendar/2015.html'>2015</a>&nbsp;/&nbsp;<a href='/calendar/2015/04.html'>4</a>&nbsp;/&nbsp;<a href='/calendar/2015/04/28.html'>28</a>
+<a href='/calendar/2015.html'>2015</a>&nbsp;/&nbsp;<a href='/calendar/2015/04.html'>4</a>&nbsp;/&nbsp;<a href='/calendar/2015/04/29.html'>29</a>
 </li>
 <li class='author'>
 <i class='fa fa-user'></i>
@@ -123,69 +123,66 @@ Michael Ding
 </div>
 </div>
 <div class='cell markdown'>
-<p>和<a href="2015/04/25/Riak%E7%9A%84%E5%88%86%E5%B8%83%E5%BC%8F%E6%95%B0%E6%8D%AE%E5%BA%93%E6%A8%A1%E5%9E%8B.html">上一篇博文</a>一样，这次我们依旧以 Riak 为案例，来分析 <code>CAP</code> 理论在一个实际的分布式数据库中的作用。</p>
+<p>冲突的处理，也是分布式系统中一个重要的议题。今天我们继续以 Riak 为案例，看看 Riak 是怎么做冲突处理的。</p>
 
-<p>如果你还不熟悉 <code>CAP</code>，可以参考我之前的两篇博客 <a href="/2015/04/22/%E7%90%86%E8%A7%A3CAP%E7%90%86%E8%AE%BA.html">理解 CAP 理论</a>, <a href="/2015/04/23/Eventual-Consistency(%E6%9C%80%E7%BB%88%E4%B8%80%E8%87%B4%E6%80%A7).html">最终一致性</a>。</p>
+<h2>Vector Clock(向量钟)</h2>
 
-<p>这次我们来看看，在 Riak 这样的分布式key-value数据库中，<code>CAP</code>理论是怎么起作用的。</p>
+<p>Riak 通过一种叫做 <code>Vector Clock</code> 的机制来处理冲突问题。简单来说，<code>Vector Clock</code> 是一段 <code>token</code>，
+像 <code>Riak</code> 这样的分布式系统通过这样的 <code>token</code> 来追踪数据更新操作的先后顺序。</p>
 
-<h2>Nodes/Writes/Reads</h2>
+<p>在冲突处理中，能够知道冲突操作(eg. 创建操作，更改操作)的顺序，是非常重要的。
+因为对于分布式系统来说，不同的客户端连接到的是不同的服务器节点，
+当一个客户端更新了一个服务器节点上的数据，也许另一个客户端也同时更新了另一个服务器节点上的数据。</p>
 
-<p>首先还是让我们来明确几个概念。</p>
+<p>这时候，也许你会想到：记录每个操作的时间戳，然后依照时间戳靠后的操作来。然而要这么做的话，这里有个隐含的前提：
+在这个分布式系统中的每个服务器节点，时钟都必须是完全同步的。
+然而事实上，一方面这是非常困难的：需要非常大的财力物力的投入；另一方面，整个系统又是单点故障的。</p>
 
-<p><strong>N</strong> odes</p>
+<p>所以，Riak 使用 <code>Vector Clocks</code> 来处理冲突。<code>Vector Clocks</code> 给每个写操作(创建，更改，删除) 打上一个标签，标签代表了是哪个客户端以什么样的顺序执行的操作。
+这样一来，客户端或者开发者就能决定面对冲突，该怎么决定。
+如果你熟悉像 <code>Git</code>, <code>Subversion</code>这样的版本控制系统，
+这就和两个人同时修改了同一个文件产生的冲突解决思路是相似的。</p>
 
-<p>需要&quot;最终&quot;包含正确的值的服务器节点总数(正确的冗余数据拷贝数)。</p>
+<h3><code>Vector Clock</code> 小故事 —— <code>Vector Clock</code> 相关理论</h3>
 
-<p><strong>W</strong> rites</p>
+<p>暴走大事件的编辑部每周都要整理下一期里要播报的新闻段子。</p>
 
-<p>每次写操作，我们需要确保最少有多少节点被更新。也就是说，我们在执行写操作的时候，不需要等待 N 个节点都成功被写入，
-而只需要 W 个节点成功写入，这次写操作就返回成功，而其他节点是在后台进行同步。</p>
+<p>假设负责整理新闻段子有3个人：王尼玛(A), 张全蛋(B), 纸巾&copy;。他们需要确定最终的新闻段子的列表。新闻段子的列表存储在分布式的服务器中。</p>
 
-<p><strong>R</strong> eads</p>
+<p>每个人用自己的终端连接数据库。这些终端都有着唯一的标识，用来构建 vector clock。下面就让我们模拟一下，vector clock 是如何工作的。</p>
 
-<p>每次读操作，我们需要确保最少读到几份冗余数据。也就是说，我们在执行读操作的时候，需要读到 R 个节点的数据才算读成功，否则读取失败。</p>
+<p>首先，王尼玛用自己的终端更新了列表</p>
+<pre><code class="highlight plaintext">vclock: A[0]
+value: ['news xx']
+</code></pre>
 
-<p>为什么要这三个变量？其实这三个变量直接关系到了 Riak 的 CAP 特性。下面我们就来一一说明：</p>
+<p>然后，张全蛋先下载了这个列表，然后更新了这个列表</p>
+<pre><code class="highlight plaintext">vclock: A[0], B[0]
+value: ['news xx', 'news xyy']
+</code></pre>
 
-<h2>Eventual Consistency(W + R &lt;= N)</h2>
+<p>张全蛋更新的同时(王尼玛做更新之后)，纸巾同样的下载了已有的列表，做了更新。</p>
+<pre><code class="highlight plaintext">vclock: A[0], C[0]
+value: ['news xx', 'news yyz']
+</code></pre>
 
-<p>如下图所示：假设我们的 N=3, 设置 W + R &lt;= N(例如：R=2, W=1)。这样我们的系统可以相对保证读写性能。
-因为写操作只需要一个节点写入就返回成功。</p>
+<p>第二天，张全蛋复查列表，由于纸巾的更新操作并不是在他之后的(而是和他同时的)，
+这时候就产生了一个冲突，需要处理。</p>
 
-<p><img alt="fig1" src="/images/w+r&lt;=n-e653dec0.png" /></p>
+<p>他拿到两个值：</p>
+<pre><code class="highlight plaintext">vclock: A[0], B[0]
+value: ['news xx', 'news xyy']
+--
+vclock: A[0], C[0]
+value: ['news xx', 'news yyz']
+</code></pre>
 
-<p>然而这里有机率发生这样的情况：就像图中所示，我写入的是node1(versionB)，然后进行了一次读操作。
-恰好这时候新数据尚未同步到node2, node3，而读操作又是从node2，node3取的值。由于这两个节点的值都是 version A，
-所以得到的值便是 version A。</p>
+<p>他需要解决这个冲突：于是他选择合并这两个值：</p>
+<pre><code class="highlight plaintext">vclock: A[0], C[0], B[1]
+value: ['news xx', 'news xyy', 'news yyz']
+</code></pre>
 
-<p>不过随着时间的推移，node1 中的 versionB 会被同步到 node2 以及 node3 中。
-这时候，再有读操作，得到的值便是最新值(versionB)了。</p>
-
-<p>这就是所谓的 Eventual Consistency。整个系统有着较高的读写性能，但一致性有所牺牲。</p>
-
-<p>如果我们需要加强一致性，可以通过调整 W, R, N 来实现。</p>
-
-<p>接下来我们会讨论如何调整 W，R，N 的关系来平衡读写性能和一致性(即 A 和 C 的平衡)。</p>
-
-<h2>通过调节 W,R,N 的关系来调节一致性和读写性能的关系</h2>
-
-<p>一种极端做法(下图所示)，我们可以设 W=N, R=1。其实这就是关系型数据库的做法。
-通过确保每次写操作时，所有相关节点都被成功写入，来确保一致性。这样可以保证一致性，但是牺牲了写操作的性能。</p>
-
-<p><img alt="fig2" src="/images/w=nr=1-03f259cf.png" /></p>
-
-<p>还有一种极端做法，我们可以设W=1, R=N。这样，无论你向哪个node写入了数据，都会被读到。
-然后你读到的N个值也可能包含旧的值，只要有办法分辨出哪个是最新的值就可以了
-(Riak 是用一直叫向量钟(Vector Clock)的技术来判断的，我们会在后面的博客中做介绍)
-这样可以保证一致性，但是牺牲了读操作的性能。</p>
-
-<p><img alt="fig3" src="/images/w=1r=n-d16553e5.png" /></p>
-
-<p>最后再给出一种被称作 <code>quorum</code> 的做法。如下图所示，可以设置 W + R &gt; N (例如 W=2, R=2)。这样同样可以保证一致性。
-然而性能的损失由写操作和读操作共同承担。这种做法叫做 <code>quorum</code>。</p>
-
-<p><img alt="fig4" src="/images/w+r&gt;n-a4cdd279.png" /></p>
+<p>这样一来，任何人之后获取到的就是这个最新的合并后的值了。</p>
 
 </div>
 <div class="bdsharebuttonbox"><a href="#" class="bds_more" data-cmd="more"></a><a href="#" class="bds_weixin" data-cmd="weixin" title="分享到微信"></a><a href="#" class="bds_tsina" data-cmd="tsina" title="分享到新浪微博"></a><a href="#" class="bds_twi" data-cmd="twi" title="分享到Twitter"></a><a href="#" class="bds_fbook" data-cmd="fbook" title="分享到Facebook"></a><a href="#" class="bds_renren" data-cmd="renren" title="分享到人人网"></a><a href="#" class="bds_qzone" data-cmd="qzone" title="分享到QQ空间"></a></div>
@@ -194,10 +191,10 @@ Michael Ding
 <hr>
 <ul class='no-bullet'>
 <li>
-<a href="/2015/04/25/Riak的分布式数据库模型.html">较旧一篇: Riak的分布式数据库模型 - 分布式数据库相关理论 Part3</a>
+<a href="/2015/04/28/Riak中的CAP.html">较旧一篇: Riak 中的 CAP - 分布式数据库相关理论 Part4</a>
 </li>
 <li>
-<a href="/2015/04/29/冲突的处理.html">较新一篇: 冲突的处理 - 分布式数据库相关理论 Part5</a>
+&nbsp;
 </li>
 </ul>
 <div class='ds-thread'></div>
