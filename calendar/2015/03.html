@@ -124,7 +124,7 @@
 </div>
 <div class='large-9 large-pull-3 small-12 columns'>
 <div class='right-content'>
-<h2><a href="/2015/03/15/Redis-Can-t-save-in-background-fork-Cannot-allocate-memory.html">Redis "Can't save in background: fork: Cannot allocate memory"</a></h2>
+<h2><a href="/2015/03/15/Redis-Can-t-save-in-background-fork-Cannot-allocate-memory.html">Redis 相关的 Linux 内核参数</a></h2>
 <div class='article-meta'>
 <ul class='no-bullet credit'>
 <li class='date'>
@@ -142,7 +142,7 @@ Michael Ding
 </div>
 </div>
 <div class='cell markdown'>
-<h2>问题</h2>
+<h2>问题 1</h2>
 
 <p>默认情况下，redis 的持久化方案是 RDB，对于数据丢失的风险相对较高。
 如果对于持久化要求较高，一般会使用 AOF。</p>
@@ -152,7 +152,7 @@ Michael Ding
 <p>这个错误会出现的原因如下：</p>
 
 <p>Redis 的后台持久化基于操作系统 <code>fork</code> 的 <code>copy-on-write</code>特性。redis 会 fork 一个子进程，这个子进程是
-父进程的完整拷贝。然后这...</p>
+父进程的完整拷贝。然...</p>
 </div>
 <p class='readmore'>
 <a class="button primary radius small" href="/2015/03/15/Redis-Can-t-save-in-background-fork-Cannot-allocate-memory.html">阅读全文&rarr;</a>

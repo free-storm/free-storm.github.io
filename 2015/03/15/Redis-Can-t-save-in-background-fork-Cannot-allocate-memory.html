@@ -18,7 +18,7 @@
 <meta content='on' http-equiv='cleartype'>
 <meta content='IE=edge,chrome=1' http-equiv='X-UA-Compatible'>
 <link href='opensearch.xml' rel='search' title='自由风暴' type='application/opensearchdescription+xml'>
-<title>Redis "Can't save in background: fork: Cannot allocate memory"</title>
+<title>Redis 相关的 Linux 内核参数</title>
 <link href="/stylesheets/application-6b641459.css" rel="stylesheet" type="text/css" />
 
 <script src="/javascripts/modernizr-84a49412.js" type="text/javascript"></script>
@@ -99,7 +99,7 @@
 <div class='row'>
 <div class='large-7 columns'>
 <h4>
-<a href='#'>Redis "Can't save in background: fork: Cannot allocate memory"</a>
+<a href='#'>Redis 相关的 Linux 内核参数</a>
 </h4>
 </div>
 </div>
@@ -123,7 +123,7 @@ Michael Ding
 </div>
 </div>
 <div class='cell markdown'>
-<h2>问题</h2>
+<h2>问题 1</h2>
 
 <p>默认情况下，redis 的持久化方案是 RDB，对于数据丢失的风险相对较高。
 如果对于持久化要求较高，一般会使用 AOF。</p>
@@ -139,24 +139,43 @@ Michael Ding
 所以如果 Linux 的内核参数 <code>overcommit_memory</code> 设置成 <code>0</code> 的话，除非空闲内存比父进程占用的内存还要多，
 否则 <code>fork</code> 就会失败。只有当 <code>overcommit_memory</code> 被设置成 <code>1</code>，Linux 才会尝试去 <code>fork</code>。</p>
 
-<h2>方案</h2>
+<h2>方案 1</h2>
 
 <p>思路：将 <code>overcommit_memory</code> 设置成 <code>1</code></p>
 
-<h4>方法 1</h4>
+<h4>方法 1.1</h4>
 <pre><code class="highlight plaintext">echo 1 &gt; /proc/sys/vm/overcommit_memory
 </code></pre>
 
-<h4>方法 2</h4>
+<h4>方法 1.2</h4>
 <pre><code class="highlight plaintext">sysctl vm.overcommit_memory=1
 </code></pre>
 
-<h4>方法 3</h4>
+<h4>方法 1.3</h4>
 <pre><code class="highlight plaintext">echo 'vm.overcommit_memory=1' &gt; /etc/sysctl.d/60-vm-memory.conf
 service procps start
 </code></pre>
 
 <p><strong>注意</strong> 60开头的文件中的设置会最晚被执行</p>
+
+<h2>问题 2</h2>
+
+<p>可能导致 Redis 意外崩溃的 Redis 参数设置</p>
+
+<h2>方案 2</h2>
+
+<h3>net.core.somaxconn</h3>
+<pre><code class="highlight plaintext">you have Transparent Huge Pages (THP) support enabled in your kernel. This will create latency and memory usage issues with Redis. To fix this issue run the command 'echo never &gt; /sys/kernel/mm/transparent_hugepage/enabled' as root, and add it to your /etc/rc.local in order to retain the setting after a reboot. Redis must be restarted after THP is disabled.
+</code></pre>
+<pre><code class="highlight plaintext">echo 'net.core.somaxconn=256' &gt; /etc/sysctl.d/60-net.conf
+service procps start
+</code></pre>
+
+<h3>transparent huge page</h3>
+<pre><code class="highlight plaintext">you have Transparent Huge Pages (THP) support enabled in your kernel. This will create latency and memory usage issues with Redis. To fix this issue run the command 'echo never &gt; /sys/kernel/mm/transparent_hugepage/enabled' as root, and add it to your /etc/rc.local in order to retain the setting after a reboot. Redis must be restarted after THP is disabled.
+</code></pre>
+<pre><code class="highlight plaintext">echo never &gt; /sys/kernel/mm/transparent_hugepage/enabled
+</code></pre>
 
 </div>
 <div class="bdsharebuttonbox"><a href="#" class="bds_more" data-cmd="more"></a><a href="#" class="bds_weixin" data-cmd="weixin" title="分享到微信"></a><a href="#" class="bds_tsina" data-cmd="tsina" title="分享到新浪微博"></a><a href="#" class="bds_twi" data-cmd="twi" title="分享到Twitter"></a><a href="#" class="bds_fbook" data-cmd="fbook" title="分享到Facebook"></a><a href="#" class="bds_renren" data-cmd="renren" title="分享到人人网"></a><a href="#" class="bds_qzone" data-cmd="qzone" title="分享到QQ空间"></a></div>
