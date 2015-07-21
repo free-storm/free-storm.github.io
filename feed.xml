@@ -5,22 +5,10 @@
   <id>http://freestorm.org/</id>
   <link href="http://freestorm.org/"/>
   <link href="http://freestorm.org/feed.xml" rel="self"/>
-  <updated>2015-05-05T00:00:00+08:00</updated>
+  <updated>2015-04-29T00:00:00+08:00</updated>
   <author>
     <name>自由风暴</name>
   </author>
-  <entry>
-    <title/>
-    <link rel="alternate" href="/2015/05/05/Docker-开源的容器工具.html"/>
-    <id>/2015/05/05/Docker-开源的容器工具.html</id>
-    <published>2015-05-05T00:00:00+08:00</published>
-    <updated>2015-05-05T00:00:00+08:00</updated>
-    <author>
-      <name>自由风暴</name>
-    </author>
-    <summary type="html"></summary>
-    <content type="html"></content>
-  </entry>
   <entry>
     <title>冲突的处理 - 分布式数据库相关理论 Part5</title>
     <link rel="alternate" href="/2015/04/29/冲突的处理.html"/>
@@ -397,6 +385,61 @@ value: ['news xx', 'news xyy', 'news yyz']
 &lt;p&gt;你可以回答你知道的最新一期(第三季43集，5年前的最新一期)。如果你选择回答，那你就是 &lt;code&gt;Available&lt;/code&gt; 的。或者你可以选择不回答，因为你已经与世隔绝了 5  年，你知道你的答案很可能和世界上其余暴漫粉丝的答案不一致(&lt;code&gt;Consistent&lt;/code&gt;)，这样这个路人得不到答案，但是整个世界是 &lt;code&gt;Consistent&lt;/code&gt; 的。&lt;/p&gt;
 
 &lt;p&gt;即：你可以选择确保路人能得到答案(Available)，或者确保世界的一致性(Consistent)。&lt;/p&gt;
+</content>
+  </entry>
+  <entry>
+    <title>配置自己的 docker-registry 服务</title>
+    <link rel="alternate" href="/2015/04/20/setup-docker-registry.html"/>
+    <id>/2015/04/20/setup-docker-registry.html</id>
+    <published>2015-04-20T00:00:00+08:00</published>
+    <updated>2015-04-20T00:00:00+08:00</updated>
+    <author>
+      <name>Michael Ding</name>
+    </author>
+    <summary type="html">&lt;p&gt;鉴于 docker 官网在国内的访问速度，在我们(暴走漫画)大量地将开发/部署环境迁移到 docker 以后，我们考虑自建 docker registry 服务。&lt;/p&gt;
+
+&lt;p&gt;docker registry 的 github 地址是 &lt;a href="https://github.com/docker/docker-registry"&gt;https://github.com/docker/docker-registry&lt;/a&gt;。是一个基于 python 写的 web service.&lt;/p&gt;
+
+&lt;p&gt;docker registry 最新的安装方式非常简单：&lt;code&gt;docker run -p 5000:5000 registry
+&lt;/code&gt;。
+...&lt;/p&gt;</summary>
+    <content type="html">&lt;p&gt;鉴于 docker 官网在国内的访问速度，在我们(暴走漫画)大量地将开发/部署环境迁移到 docker 以后，我们考虑自建 docker registry 服务。&lt;/p&gt;
+
+&lt;p&gt;docker registry 的 github 地址是 &lt;a href="https://github.com/docker/docker-registry"&gt;https://github.com/docker/docker-registry&lt;/a&gt;。是一个基于 python 写的 web service.&lt;/p&gt;
+
+&lt;p&gt;docker registry 最新的安装方式非常简单：&lt;code&gt;docker run -p 5000:5000 registry
+&lt;/code&gt;。
+其实也就是：docker registry 被制作成了 docker image，在要跑 docker registry 的服务器上装好 docker，
+用 docker 去跑 docker registry 服务。&lt;/p&gt;
+
+&lt;p&gt;因此我们可以利用 docker 的启动命令来启动符合自己需求的 registry 服务。&lt;/p&gt;
+
+&lt;p&gt;主要有：&lt;/p&gt;
+
+&lt;h3&gt;1. 利用环境变量修改配置&lt;/h3&gt;
+
+&lt;p&gt;例如，你需要设置 search&lt;em&gt;backend，可以为 &lt;code&gt;docker run&lt;/code&gt; 增加参数：`-e SEARCH&lt;/em&gt;BACKEND=sqlalchemy`&lt;/p&gt;
+
+&lt;p&gt;完整的环境变量对应的参数设置，可参见 &lt;a href="https://github.com/docker/docker-registry/blob/master/config/config_sample.yml"&gt;配置文件&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;另外，docker 的配置还有一个 &lt;a href="https://github.com/docker/docker-registry#configuration-flavors"&gt;Configuration flavors&lt;/a&gt;的概念。&lt;/p&gt;
+
+&lt;p&gt;这个概念允许你定义一些&amp;quot;运行模式&amp;quot;，不同的模式采用不同的配置。例如&amp;quot;development&amp;quot;, &amp;ldquo;production&amp;quot;等等。&lt;/p&gt;
+
+&lt;h3&gt;2. 利用自己的配置文件修改配置&lt;/h3&gt;
+
+&lt;p&gt;你也可以编写自己的配置文件(参考 &lt;a href="https://github.com/docker/docker-registry/blob/master/config/config_sample.yml"&gt;默认配置文件&lt;/a&gt;),
+然后利用 &lt;code&gt;docker run&lt;/code&gt; 的 &lt;code&gt;-v&lt;/code&gt; 参数，将自己的配置文件映射到 container 里面去，并设置相应的环境变量(&lt;code&gt;DOCKER_REGISTRY_CONFIG&lt;/code&gt;)，从而覆盖默认的配置。&lt;/p&gt;
+&lt;pre&gt;&lt;code class="highlight plaintext"&gt;sudo docker run -p 5000:5000 -v /home/me/myfolder:/registry-conf -e DOCKER_REGISTRY_CONFIG=/registry-conf/mysuperconfig.yml registry
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3&gt;3. 挂载数据卷&lt;/h3&gt;
+
+&lt;p&gt;将 docker registry 存储 images 的路径映射出来是个明智的做法，这样即使重新创建 registry 的 container，也可以共用之前的 images&lt;/p&gt;
+
+&lt;p&gt;可以利用 &lt;code&gt;docker run&lt;/code&gt; 的 &lt;code&gt;-v&lt;/code&gt; 参数，将一个宿主系统的配置文件映射到 container 里面，并设置响应的环境变量(&lt;code&gt;STORAGE_PATH&lt;/code&gt;)来实现。&lt;/p&gt;
+&lt;pre&gt;&lt;code class="highlight plaintext"&gt;sudo docker run -p 5000:5000 -e STORAGE_PATH=/registry -v /data/docker-registry:/registry registry
+&lt;/code&gt;&lt;/pre&gt;
 </content>
   </entry>
 </feed>
