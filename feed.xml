@@ -5,10 +5,274 @@
   <id>http://freestorm.org/</id>
   <link href="http://freestorm.org/"/>
   <link href="http://freestorm.org/feed.xml" rel="self"/>
-  <updated>2015-04-29T00:00:00+08:00</updated>
+  <updated>2015-09-29T00:00:00+08:00</updated>
   <author>
     <name>自由风暴</name>
   </author>
+  <entry>
+    <title>暴走漫画 Docker 实践——Dockone 分享</title>
+    <link rel="alternate" href="/2015/09/29/暴走漫画Docker实践.html"/>
+    <id>/2015/09/29/暴走漫画Docker实践.html</id>
+    <published>2015-09-29T00:00:00+08:00</published>
+    <updated>2015-09-29T00:00:00+08:00</updated>
+    <author>
+      <name>Michael Ding</name>
+    </author>
+    <summary type="html">&lt;p&gt;大家好，我叫丁彦，来自暴走漫画。&lt;/p&gt;
+
+&lt;p&gt;暴走漫画是一家文化传媒公司。公司除了有若干视频娱乐节目，还有相应的社区网站及 App。流量 UV 200w/天 左右，PV 千万。
+为了更加有效地运营以及推荐用户个性化，2015年成立了数据部，负责暴漫的数据分析和数据挖掘相关服务。&lt;/p&gt;
+
+&lt;p&gt;暴漫没有自己的服务器，是使用的国内某云服务。暴漫的后端主要是基于 Ruby 开发。也有基于 go, python 的一些micro service。
+Docker 在暴漫中的应用主要包括：
+* 开发环境的 service ...&lt;/p&gt;</summary>
+    <content type="html">&lt;p&gt;大家好，我叫丁彦，来自暴走漫画。&lt;/p&gt;
+
+&lt;p&gt;暴走漫画是一家文化传媒公司。公司除了有若干视频娱乐节目，还有相应的社区网站及 App。流量 UV 200w/天 左右，PV 千万。
+为了更加有效地运营以及推荐用户个性化，2015年成立了数据部，负责暴漫的数据分析和数据挖掘相关服务。&lt;/p&gt;
+
+&lt;p&gt;暴漫没有自己的服务器，是使用的国内某云服务。暴漫的后端主要是基于 Ruby 开发。也有基于 go, python 的一些micro service。
+Docker 在暴漫中的应用主要包括：
+* 开发环境的 service 搭建
+* 代码托管，持续集成，docker 镜像，等若干 support 服务
+* 部分 micro service 以及整个数据服务系统&lt;/p&gt;
+
+&lt;p&gt;所以今天的内容是一些中小规模以及国内云服务下的 docker 实践的相关心得，主要包括在数据服务的架构及 docker 化的部署。&lt;/p&gt;
+
+&lt;h2&gt;1. 简单介绍下开发环境以及 support 服务的 docker 应用&lt;/h2&gt;
+
+&lt;p&gt;由于开发环境主要是 Mac，也有少量 Ubuntu 和 Windows，所以主要采用 Vagrant + docker 方式。
+将 micro service 做成 image，在 Vagrant 中起相应的container，把端口暴露给 Host(Vagrant)。本地跑 Ruby(on Rails)&lt;/p&gt;
+
+&lt;p&gt;support 服务的话，其他都很简单，只有持续集成介绍下。我们用的 gitlab ci。gitlab ci 支持将 task 跑在 docker container 里面
+所以我们为不同的项目准备不同的测试环境(image)以及外部依赖(eg. mysql, redis)，然后在对应的 container 里面跑测试。
+关于部署的话，我们平时的开发在 develop 分支，一旦向 master 分支合并后，会触发部署的 task。
+部署的 task 跑在特定的 container 里面，这个 container 共享了 Host 的 docker unix sock 文件，可以执行 docker build, push 等命令&lt;/p&gt;
+
+&lt;p&gt;关于开发环境和 support 服务的 docker 应用，因为不是今天的重点，并且前面也有很多朋友做过类似的介绍，所以先简单介绍到这里。&lt;/p&gt;
+
+&lt;h2&gt;2. micro service 和 数据服务系统的 docker 应用&lt;/h2&gt;
+
+&lt;p&gt;今年我们做了很多 micro service 的尝试，例如消息推送，推荐系统，反垃圾系统，数据分析系统，视频抓取等等若干子系统的拆分上线。
+虽然过程是痛苦的，但是结果却是令人欣慰的。这些 micro service，几乎都是基于 docker 的。&lt;/p&gt;
+
+&lt;h3&gt;2.1 Rails + docker 化的 micro service&lt;/h3&gt;
+
+&lt;p&gt;整体来说，我们是个混合的架构，Rails 是正常的跑在云主机中的，micro service 跑在 docker 中。为了协调好各方，我们对基础服务做了一点小小的调整。&lt;/p&gt;
+
+&lt;p&gt;这里不得不说说我做架构的一点心得。好的架构除了能满足业务需求，还要是与特定的团队，特定的资源所配套的。
+在暴漫，由于技术力量有限，开发排期满，所以我都是尽量采用“非侵入式”的方案，这在后面的数据服务的构建中也有体现。&lt;/p&gt;
+
+&lt;p&gt;首先，我们给所有的机器都装上了 docker
+其次，我们搭建了一个 etcd 集群，将所有的云主机都纳入了 etcd 集群。而 etcd 也是跑在 docker 里的。
+为了方便的跑起来 etcd，我们写了个一套 bash + python 的脚本(Python 的脚本也是跑在 docker 里的)
+然后，所有的机器直接访问本机 IP 可以 access etcd。&lt;/p&gt;
+
+&lt;p&gt;这里插一句，我们没有去折腾如何让docker跨主机组网，而是直接采用映射到 host的方式。一方面国内云主机只能这么干。另一方面，我们之前使用云主机也是单个主机特定用途的。
+另外，在生产环境中，我们大量的使用了 shell + etcd 来启动 docker container 的方式。可以给大家看个 etcd 的启动 script。这个 script 放到最初的机器上就可以方便地启动起来etcd 集群。&lt;/p&gt;
+&lt;pre&gt;&lt;code class="highlight shell"&gt;&lt;span class="c"&gt;#!/bin/bash&lt;/span&gt;
+
+check_non_empty&lt;span class="o"&gt;()&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+  &lt;span class="c"&gt;# $1 is the content of the variable in quotes e.g. "$FROM_EMAIL"&lt;/span&gt;
+  &lt;span class="c"&gt;# $2 is the error message&lt;/span&gt;
+  &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="o"&gt;[[&lt;/span&gt; &lt;span class="nv"&gt;$1&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="s2"&gt;""&lt;/span&gt; &lt;span class="o"&gt;]]&lt;/span&gt;; &lt;span class="k"&gt;then
+  &lt;/span&gt;&lt;span class="nb"&gt;echo&lt;/span&gt; &lt;span class="s2"&gt;"ERROR: specify &lt;/span&gt;&lt;span class="nv"&gt;$2&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;
+  &lt;span class="nb"&gt;exit&lt;/span&gt; -1
+  &lt;span class="k"&gt;fi&lt;/span&gt;
+&lt;span class="o"&gt;}&lt;/span&gt;
+
+check_exec_success&lt;span class="o"&gt;()&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+  &lt;span class="c"&gt;# $1 is the content of the variable in quotes e.g. "$FROM_EMAIL"&lt;/span&gt;
+  &lt;span class="c"&gt;# $2 is the error message&lt;/span&gt;
+  &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="o"&gt;[[&lt;/span&gt; &lt;span class="nv"&gt;$1&lt;/span&gt; !&lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;"0"&lt;/span&gt; &lt;span class="o"&gt;]]&lt;/span&gt;; &lt;span class="k"&gt;then
+  &lt;/span&gt;&lt;span class="nb"&gt;echo&lt;/span&gt; &lt;span class="s2"&gt;"ERROR: &lt;/span&gt;&lt;span class="nv"&gt;$2&lt;/span&gt;&lt;span class="s2"&gt; failed"&lt;/span&gt;
+  &lt;span class="nb"&gt;echo&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="nv"&gt;$3&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;
+  &lt;span class="nb"&gt;exit&lt;/span&gt; -1
+  &lt;span class="k"&gt;fi&lt;/span&gt;
+&lt;span class="o"&gt;}&lt;/span&gt;
+
+up&lt;span class="o"&gt;()&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+
+  &lt;span class="c"&gt;# create ${EtcdData}&lt;/span&gt;
+  mkdir -p &lt;span class="k"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;EtcdData&lt;/span&gt;&lt;span class="k"&gt;}&lt;/span&gt;
+
+  &lt;span class="c"&gt;# pull pycsa docker image&lt;/span&gt;
+  docker pull private/pycsa:latest
+
+  check_exec_success &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="nv"&gt;$?&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="s2"&gt;"pulling 'pycsa' image"&lt;/span&gt;
+
+  &lt;span class="c"&gt;# pull etcd docker image&lt;/span&gt;
+  docker pull quay.io/coreos/etcd:latest
+
+  check_exec_success &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="nv"&gt;$?&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="s2"&gt;"pulling 'etcd' image"&lt;/span&gt;
+
+  &lt;span class="c"&gt;# build cluster nodes list for `-initial-cluster`&lt;/span&gt;
+  &lt;span class="nv"&gt;cwd&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="k"&gt;$(&lt;/span&gt;&lt;span class="nb"&gt;pwd&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;
+  &lt;span class="nv"&gt;ClusterNodes&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="k"&gt;$(&lt;/span&gt;docker run --rm &lt;span class="se"&gt;\&lt;/span&gt;
+    -v &lt;span class="k"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;cwd&lt;/span&gt;&lt;span class="k"&gt;}&lt;/span&gt;:/data &lt;span class="se"&gt;\&lt;/span&gt;
+    private/pycsa:latest &lt;span class="se"&gt;\&lt;/span&gt;
+    python up.py cluster-nodes &lt;span class="k"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;1&lt;/span&gt;&lt;span class="k"&gt;}&lt;/span&gt; &lt;span class="k"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;ETCD_NAME&lt;/span&gt;&lt;span class="k"&gt;}&lt;/span&gt; &lt;span class="k"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;HostIP&lt;/span&gt;&lt;span class="k"&gt;})&lt;/span&gt;
+
+    check_exec_success &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="nv"&gt;$?&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="k"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;ClusterNodes&lt;/span&gt;&lt;span class="k"&gt;}&lt;/span&gt;
+
+    &lt;span class="k"&gt;case&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="nv"&gt;$1&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+    &lt;span class="s2"&gt;"-a"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="k"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;BaseCmd&lt;/span&gt;&lt;span class="k"&gt;}&lt;/span&gt; -initial-cluster &lt;span class="k"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;ClusterNodes&lt;/span&gt;&lt;span class="k"&gt;}&lt;/span&gt; &lt;span class="se"&gt;\&lt;/span&gt;
+    -initial-cluster-state existing
+    &lt;span class="p"&gt;;;&lt;/span&gt;
+    &lt;span class="s2"&gt;""&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="k"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;BaseCmd&lt;/span&gt;&lt;span class="k"&gt;}&lt;/span&gt; -initial-cluster &lt;span class="k"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;ClusterNodes&lt;/span&gt;&lt;span class="k"&gt;}&lt;/span&gt; &lt;span class="se"&gt;\&lt;/span&gt;
+    -initial-cluster-token bzetcd-cluster -initial-cluster-state new
+    &lt;span class="p"&gt;;;&lt;/span&gt;
+    &lt;span class="k"&gt;*&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="nb"&gt;echo&lt;/span&gt; &lt;span class="s2"&gt;"Usage: ./etcd.sh up [-a]"&lt;/span&gt;
+    &lt;span class="nb"&gt;exit &lt;/span&gt;1
+    &lt;span class="p"&gt;;;&lt;/span&gt;
+    &lt;span class="k"&gt;esac&lt;/span&gt;
+  &lt;span class="o"&gt;}&lt;/span&gt;
+
+  start&lt;span class="o"&gt;()&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+    docker &lt;span class="nb"&gt;kill &lt;/span&gt;etcd 2&amp;gt;/dev/null
+    docker rm etcd 2&amp;gt;/dev/null
+    &lt;span class="k"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;BaseCmd&lt;/span&gt;&lt;span class="k"&gt;}&lt;/span&gt;
+  &lt;span class="o"&gt;}&lt;/span&gt;
+
+  stop&lt;span class="o"&gt;()&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+    docker stop etcd
+    docker rm etcd
+  &lt;span class="o"&gt;}&lt;/span&gt;
+
+
+  &lt;span class="c"&gt;##################&lt;/span&gt;
+  &lt;span class="c"&gt;# Start of script&lt;/span&gt;
+  &lt;span class="c"&gt;##################&lt;/span&gt;
+
+  &lt;span class="c"&gt;# source env&lt;/span&gt;
+  . /etc/default/etcd
+
+  check_non_empty &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="k"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;ETCD_NAME&lt;/span&gt;&lt;span class="k"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="s2"&gt;"ETCD_NAME"&lt;/span&gt;
+
+  &lt;span class="c"&gt;# get host ip&lt;/span&gt;
+  &lt;span class="nv"&gt;HostIP&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="k"&gt;$(&lt;/span&gt;ifconfig eth0 | awk &lt;span class="s1"&gt;'/\&amp;lt;inet\&amp;gt;/ { print $2}'&lt;/span&gt; | sed &lt;span class="s1"&gt;'s/addr://g'&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;
+
+  &lt;span class="c"&gt;# set data dir&lt;/span&gt;
+  &lt;span class="nv"&gt;EtcdData&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;/data/etcd/data
+
+  &lt;span class="c"&gt;# create etcd container base cmd&lt;/span&gt;
+  &lt;span class="nv"&gt;BaseCmd&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;"docker run -d &lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;&lt;span class="s2"&gt;
+  -v /usr/share/ca-certificates/:/etc/ssl/certs &lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;&lt;span class="s2"&gt;
+  -v &lt;/span&gt;&lt;span class="k"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;EtcdData&lt;/span&gt;&lt;span class="k"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;:/data &lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;&lt;span class="s2"&gt;
+  -p 4001:4001 -p 2380:2380 -p 2379:2379 &lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;&lt;span class="s2"&gt;
+  --name etcd quay.io/coreos/etcd:latest &lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;&lt;span class="s2"&gt;
+  -name &lt;/span&gt;&lt;span class="k"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;ETCD_NAME&lt;/span&gt;&lt;span class="k"&gt;}&lt;/span&gt;&lt;span class="s2"&gt; &lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;&lt;span class="s2"&gt;
+  -data-dir /data &lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;&lt;span class="s2"&gt;
+  -advertise-client-urls http://&lt;/span&gt;&lt;span class="k"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;HostIP&lt;/span&gt;&lt;span class="k"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;:2379,http://&lt;/span&gt;&lt;span class="k"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;HostIP&lt;/span&gt;&lt;span class="k"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;:4001 &lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;&lt;span class="s2"&gt;
+  -listen-client-urls http://0.0.0.0:2379,http://0.0.0.0:4001 &lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;&lt;span class="s2"&gt;
+  -initial-advertise-peer-urls http://&lt;/span&gt;&lt;span class="k"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;HostIP&lt;/span&gt;&lt;span class="k"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;:2380 &lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;&lt;span class="s2"&gt;
+  -listen-peer-urls http://0.0.0.0:2380"&lt;/span&gt;
+
+  &lt;span class="k"&gt;case&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="nv"&gt;$1&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="k"&gt;in
+  &lt;/span&gt;up&lt;span class="p"&gt;)&lt;/span&gt; up &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="nv"&gt;$2&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="p"&gt;;;&lt;/span&gt;
+  start&lt;span class="p"&gt;)&lt;/span&gt; start &lt;span class="p"&gt;;;&lt;/span&gt;
+  stop&lt;span class="p"&gt;)&lt;/span&gt; stop &lt;span class="p"&gt;;;&lt;/span&gt;
+  restart&lt;span class="p"&gt;)&lt;/span&gt;
+  stop
+  start
+  &lt;span class="p"&gt;;;&lt;/span&gt;
+  &lt;span class="k"&gt;*&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+  &lt;span class="nb"&gt;echo&lt;/span&gt; &lt;span class="s2"&gt;"Usage: ./etcd.sh start|stop|restart or ./etcd.sh up [-a]"&lt;/span&gt;
+  &lt;span class="nb"&gt;exit &lt;/span&gt;1
+  &lt;span class="p"&gt;;;&lt;/span&gt;
+  &lt;span class="k"&gt;esac&lt;/span&gt;
+
+  &lt;span class="nb"&gt;exit &lt;/span&gt;0
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;解释下， &lt;code&gt;up.py&lt;/code&gt; 是个 python 的脚本，跑在一个 pycsa 的容器里，这个容器有 python 环境以及相关的 package&lt;/p&gt;
+
+&lt;p&gt;这样原来的服务几乎不受任何影响，我们可以利用 etcd + docker + shell script 来组建新的服务。&lt;/p&gt;
+
+&lt;h3&gt;2.2 数据服务&lt;/h3&gt;
+
+&lt;p&gt;我们的数据服务包括数据分析和数据挖掘两大块。数据分析主要是为了给运营提供量化的效果评估以及指导。数据挖掘则包括推荐，反垃圾等。&lt;/p&gt;
+
+&lt;p&gt;数据服务的基础是数据流，即：数据收集-&amp;gt;数据分发-&amp;gt;数据处理&amp;lt;-&amp;gt;数据存储&lt;/p&gt;
+
+&lt;p&gt;先给大家看个整体的架构图，由于本人不擅作图，所以直接用手画的，还请见谅。。&lt;/p&gt;
+
+&lt;p&gt;&lt;img alt="fig" src="/images/baozou-data-arch-3a482905.png" /&gt;&lt;/p&gt;
+
+&lt;p&gt;首先数据收集部分，就像之前说的，我尽量采用“非侵入式”的方案，所以，我们的整个数据收集都是基于日志的。
+我们在每个应用服务器上装了 logstash (跑在 docker 中) 来收集各个应用服务器的日志，然后打到 kafka (跑在 docker 中) 里，给不同的用途使用。&lt;/p&gt;
+
+&lt;p&gt;一份COPY 直接由kafka 一端的 logstash 存储到 elasticsearch(跑在 docker 中) 中
+一份COPY 经过 spark (跑在 docker 中) stream 做实时处理(包括一些特定日志的提取)，然后将处理的结果存储在 elasticsearch 里
+还有一份 COPY 直接存储到 HDFS (由云服务商提供)&lt;/p&gt;
+
+&lt;p&gt;这里有个小问题，比如有些数据本身日志里并没有，比如用户的点击行为。这个时候，我们专门开发了一些 &amp;ldquo;ping&amp;rdquo; 接口，这些接口通过 Nginx 直接返回 200，并记录相关日志&lt;/p&gt;
+
+&lt;p&gt;此外还有一部分数据，例如一些比较需要“较严格的完备”的，例如用于推荐系统，反垃圾系统学习的数据，我们存储在 SQL 数据库中&lt;/p&gt;
+
+&lt;p&gt;下面我做些稍微详细的介绍&lt;/p&gt;
+
+&lt;h4&gt;2.2.1 数据分析&lt;/h4&gt;
+
+&lt;p&gt;数据分析有两种：实时数据分析和离线数据分析&lt;/p&gt;
+
+&lt;p&gt;实时数据分析从 kafka 到 spark stream，处理结果进 elasticsearch，离线分析是定时任务，从 HDFS 到 spark，处理结果进 elasticsearch。一般来说，离线的结果会逐步包含实时的结果，
+同时实时的结果领先于离线分析的结果。&lt;/p&gt;
+
+&lt;p&gt;这里的分析有些抽象，我来举个例子：&lt;/p&gt;
+
+&lt;p&gt;Q: 统计某个板块同时在线人数的变化趋势
+A: 用户每次访问都有日志，日志里包括访问内容以及用户标识。首先 spark stream 从日志里抽取出特定板块不同用户的访问事件，以秒为单位合并相同用户事件。这就是分析结果：时间戳：人数&lt;/p&gt;
+
+&lt;p&gt;然后这个结果怎么用？&lt;/p&gt;
+
+&lt;p&gt;elasticsearch 有很强大的 agg 接口。你可以以1秒，10秒，1分等等各种时间间隔单位聚合这段时间内的在线人数，聚合方式用 &amp;lsquo;平均&amp;#39;或&amp;#39;最大&amp;rsquo;&lt;/p&gt;
+
+&lt;h4&gt;2.2.2 数据挖掘&lt;/h4&gt;
+
+&lt;p&gt;我们主要做了2个具体的数据挖掘系统：推荐+反垃圾&lt;/p&gt;
+
+&lt;p&gt;今天主要讲下架构。&lt;/p&gt;
+
+&lt;p&gt;这两个系统基本上步骤是一样的，分为2步：训练(train) 和 服务(serve)&lt;/p&gt;
+
+&lt;p&gt;在 train 阶段，定时起一个 spark job，从训练数据集中读取数据，学习出 model，然后将 model 存储成文件
+在 serve 阶段，起一个带 serve 的 spark job，load 之前学习出来的model 文件进内存，然后接受外部api 调用，返回结果。&lt;/p&gt;
+
+&lt;p&gt;关于服务的开发这部分因为涉及到太多额外的知识，我就不多说了。&lt;/p&gt;
+
+&lt;p&gt;这里讲个难点：spark 的 docker 化。&lt;/p&gt;
+
+&lt;h4&gt;2.2.3 Spark 的 docker 化&lt;/h4&gt;
+
+&lt;p&gt;Spark 的 docker 化分为两个部分：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;docker 化的 spark 集群&lt;/li&gt;
+&lt;li&gt;docker 化的 spark 调用&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Spark 和我们一般用的服务不太一样，它的集群不是提供运算服务的，而是一种资源分配的调度器。
+让 Spark 跑 Job，其实是起的一个 Spark 的本地程序，这个本地程序会向 cluster 要资源(其他机器)，cluster 分配资源以后，这个 spark 程序就把一些工作放在这些资源当中运行(进程)&lt;/p&gt;
+
+&lt;p&gt;所以 Spark 的 docker 化分为两个部分。&lt;/p&gt;
+
+&lt;p&gt;对于 spark 调用，也就是启动 spark 的本地程序，我们就是在跑程序的 image 中集成 java 环境，spark 程序&lt;/p&gt;
+
+&lt;p&gt;对于 spark 集群，稍微复杂一些。spark 支持三种集群：mesos, yard，还有 spark 自己的一个 standalone
+我们搭建的 spark standalone 集群，这还是考虑到我们自身的资源与需求。&lt;/p&gt;
+
+&lt;p&gt;由于没找到官方的 spark docker image，我们自己做了一个，就是 java 环境 + spark 程序
+然后利用 script + etcd 以不同的姿势(master 或 slave)在不同的云主机上启动 spark container&lt;/p&gt;
+
+&lt;p&gt;官方推荐要起3个 master, 用 zookeeper 做 quorum，这个我们最近正在搞，还没上线，就不分享。我们现在线上跑的是 1 master  + 7 slave&lt;/p&gt;
+
+&lt;p&gt;谢谢&lt;/p&gt;
+</content>
+  </entry>
   <entry>
     <title>冲突的处理 - 分布式数据库相关理论 Part5</title>
     <link rel="alternate" href="/2015/04/29/冲突的处理.html"/>
@@ -385,61 +649,6 @@ value: ['news xx', 'news xyy', 'news yyz']
 &lt;p&gt;你可以回答你知道的最新一期(第三季43集，5年前的最新一期)。如果你选择回答，那你就是 &lt;code&gt;Available&lt;/code&gt; 的。或者你可以选择不回答，因为你已经与世隔绝了 5  年，你知道你的答案很可能和世界上其余暴漫粉丝的答案不一致(&lt;code&gt;Consistent&lt;/code&gt;)，这样这个路人得不到答案，但是整个世界是 &lt;code&gt;Consistent&lt;/code&gt; 的。&lt;/p&gt;
 
 &lt;p&gt;即：你可以选择确保路人能得到答案(Available)，或者确保世界的一致性(Consistent)。&lt;/p&gt;
-</content>
-  </entry>
-  <entry>
-    <title>配置自己的 docker-registry 服务</title>
-    <link rel="alternate" href="/2015/04/20/setup-docker-registry.html"/>
-    <id>/2015/04/20/setup-docker-registry.html</id>
-    <published>2015-04-20T00:00:00+08:00</published>
-    <updated>2015-04-20T00:00:00+08:00</updated>
-    <author>
-      <name>Michael Ding</name>
-    </author>
-    <summary type="html">&lt;p&gt;鉴于 docker 官网在国内的访问速度，在我们(暴走漫画)大量地将开发/部署环境迁移到 docker 以后，我们考虑自建 docker registry 服务。&lt;/p&gt;
-
-&lt;p&gt;docker registry 的 github 地址是 &lt;a href="https://github.com/docker/docker-registry"&gt;https://github.com/docker/docker-registry&lt;/a&gt;。是一个基于 python 写的 web service.&lt;/p&gt;
-
-&lt;p&gt;docker registry 最新的安装方式非常简单：&lt;code&gt;docker run -p 5000:5000 registry
-&lt;/code&gt;。
-...&lt;/p&gt;</summary>
-    <content type="html">&lt;p&gt;鉴于 docker 官网在国内的访问速度，在我们(暴走漫画)大量地将开发/部署环境迁移到 docker 以后，我们考虑自建 docker registry 服务。&lt;/p&gt;
-
-&lt;p&gt;docker registry 的 github 地址是 &lt;a href="https://github.com/docker/docker-registry"&gt;https://github.com/docker/docker-registry&lt;/a&gt;。是一个基于 python 写的 web service.&lt;/p&gt;
-
-&lt;p&gt;docker registry 最新的安装方式非常简单：&lt;code&gt;docker run -p 5000:5000 registry
-&lt;/code&gt;。
-其实也就是：docker registry 被制作成了 docker image，在要跑 docker registry 的服务器上装好 docker，
-用 docker 去跑 docker registry 服务。&lt;/p&gt;
-
-&lt;p&gt;因此我们可以利用 docker 的启动命令来启动符合自己需求的 registry 服务。&lt;/p&gt;
-
-&lt;p&gt;主要有：&lt;/p&gt;
-
-&lt;h3&gt;1. 利用环境变量修改配置&lt;/h3&gt;
-
-&lt;p&gt;例如，你需要设置 search&lt;em&gt;backend，可以为 &lt;code&gt;docker run&lt;/code&gt; 增加参数：`-e SEARCH&lt;/em&gt;BACKEND=sqlalchemy`&lt;/p&gt;
-
-&lt;p&gt;完整的环境变量对应的参数设置，可参见 &lt;a href="https://github.com/docker/docker-registry/blob/master/config/config_sample.yml"&gt;配置文件&lt;/a&gt;&lt;/p&gt;
-
-&lt;p&gt;另外，docker 的配置还有一个 &lt;a href="https://github.com/docker/docker-registry#configuration-flavors"&gt;Configuration flavors&lt;/a&gt;的概念。&lt;/p&gt;
-
-&lt;p&gt;这个概念允许你定义一些&amp;quot;运行模式&amp;quot;，不同的模式采用不同的配置。例如&amp;quot;development&amp;quot;, &amp;ldquo;production&amp;quot;等等。&lt;/p&gt;
-
-&lt;h3&gt;2. 利用自己的配置文件修改配置&lt;/h3&gt;
-
-&lt;p&gt;你也可以编写自己的配置文件(参考 &lt;a href="https://github.com/docker/docker-registry/blob/master/config/config_sample.yml"&gt;默认配置文件&lt;/a&gt;),
-然后利用 &lt;code&gt;docker run&lt;/code&gt; 的 &lt;code&gt;-v&lt;/code&gt; 参数，将自己的配置文件映射到 container 里面去，并设置相应的环境变量(&lt;code&gt;DOCKER_REGISTRY_CONFIG&lt;/code&gt;)，从而覆盖默认的配置。&lt;/p&gt;
-&lt;pre&gt;&lt;code class="highlight plaintext"&gt;sudo docker run -p 5000:5000 -v /home/me/myfolder:/registry-conf -e DOCKER_REGISTRY_CONFIG=/registry-conf/mysuperconfig.yml registry
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;h3&gt;3. 挂载数据卷&lt;/h3&gt;
-
-&lt;p&gt;将 docker registry 存储 images 的路径映射出来是个明智的做法，这样即使重新创建 registry 的 container，也可以共用之前的 images&lt;/p&gt;
-
-&lt;p&gt;可以利用 &lt;code&gt;docker run&lt;/code&gt; 的 &lt;code&gt;-v&lt;/code&gt; 参数，将一个宿主系统的配置文件映射到 container 里面，并设置响应的环境变量(&lt;code&gt;STORAGE_PATH&lt;/code&gt;)来实现。&lt;/p&gt;
-&lt;pre&gt;&lt;code class="highlight plaintext"&gt;sudo docker run -p 5000:5000 -e STORAGE_PATH=/registry -v /data/docker-registry:/registry registry
-&lt;/code&gt;&lt;/pre&gt;
 </content>
   </entry>
 </feed>
