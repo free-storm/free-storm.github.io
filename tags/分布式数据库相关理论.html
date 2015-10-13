@@ -18,7 +18,7 @@
 <meta content='on' http-equiv='cleartype'>
 <meta content='IE=edge,chrome=1' http-equiv='X-UA-Compatible'>
 <link href='opensearch.xml' rel='search' title='自由风暴' type='application/opensearchdescription+xml'>
-<title>自由风暴 - 2015-04
+<title>自由风暴 - 分布式数据库相关理论
 </title>
 <link href="/stylesheets/application-6b641459.css" rel="stylesheet" type="text/css" />
 
@@ -100,9 +100,7 @@
 <div class='row'>
 <div class='large-7 columns'>
 <h4>
-<a href='#'>
-2015-04
-</a>
+<a href='#'>分布式数据库相关理论</a>
 </h4>
 </div>
 </div>
@@ -110,53 +108,29 @@
 <div class='row main-content'>
 <div class='large-3 large-push-9 small-12 columns'>
 <div class='right-content'>
-<h3>
-2015-04
-</h3>
+<h3>所有标签</h3>
+<div class='tags'>
+<a class="button secondary round extiny" href="/tags/开发.html">开发</a>
+<a class="button secondary round extiny" href="/tags/效率.html">效率</a>
+<a class="button secondary round extiny" href="/tags/运维.html">运维</a>
+<a class="button secondary round extiny" href="/tags/数据库.html">数据库</a>
+<a class="button secondary round extiny" href="/tags/redis.html">Redis</a>
+<a class="button secondary round extiny" href="/tags/分布式.html">分布式</a>
+<a class="button secondary round extiny" href="/tags/分布式数据库相关理论.html">分布式数据库相关理论</a>
+<a class="button secondary round extiny" href="/tags/容器计算.html">容器计算</a>
+<a class="button secondary round extiny" href="/tags/暴走漫画容器实践系列.html">暴走漫画容器实践系列</a>
+</div>
 <hr>
 <ul class='no-bullet media'>
 <li>
 <a href="/feed.xml"><i class='fa fa-rss'></i>
-</a><a href="https://github.com/free-storm/"><i class='fa fa-github'></i>
+</a><a href="https://github.com/free-storm"><i class='fa fa-github'></i>
 </a></li>
 </ul>
 </div>
 </div>
 <div class='large-9 large-pull-3 small-12 columns'>
 <div class='right-content'>
-<h2><a href="/2015/04/29/冲突的处理.html">冲突的处理 - 分布式数据库相关理论 Part5</a></h2>
-<div class='article-meta'>
-<ul class='no-bullet credit'>
-<li class='date'>
-<i class='fa fa-calendar'></i>
-<a href='/calendar/2015.html'>2015</a>&nbsp;/&nbsp;<a href='/calendar/2015/04.html'>4</a>&nbsp;/&nbsp;<a href='/calendar/2015/04/29.html'>29</a>
-</li>
-<li class='author'>
-<i class='fa fa-user'></i>
-Michael Ding
-</li>
-</ul>
-<div class='tags'>
-<a class="button secondary round extiny" href="/tags/分布式.html">分布式</a>
-<a class="button secondary round extiny" href="/tags/数据库.html">数据库</a>
-</div>
-</div>
-<div class='cell markdown'>
-<p>冲突的处理，也是分布式系统中一个重要的议题。今天我们继续以 Riak 为案例，看看 Riak 是怎么做冲突处理的。</p>
-
-<h2>Vector Clock(向量钟)</h2>
-
-<p>Riak 通过一种叫做 <code>Vector Clock</code> 的机制来处理冲突问题。简单来说，<code>Vector Clock</code> 是一段 <code>token</code>，
-像 <code>Riak</code> 这样的分布式系统通过这样的 <code>token</code> 来追踪数据更新操作的先后顺序。</p>
-
-<p>在冲突处理中，能够知道冲突操作(eg. 创建操作，更改操作)的顺序，是非常重要的。
-因为对于分布式系统来说，不同的客户端...</p>
-</div>
-<p class='readmore'>
-<a class="button primary radius small" href="/2015/04/29/冲突的处理.html">阅读全文&rarr;</a>
-</p>
-
-<hr>
 <h2><a href="/2015/04/28/Riak中的CAP.html">Riak 中的 CAP - 分布式数据库相关理论 Part4</a></h2>
 <div class='article-meta'>
 <ul class='no-bullet credit'>
@@ -300,38 +274,6 @@ Michael Ding
 </div>
 <p class='readmore'>
 <a class="button primary radius small" href="/2015/04/22/理解CAP理论.html">阅读全文&rarr;</a>
-</p>
-
-<hr>
-<h2><a href="/2015/04/20/setup-docker-registry.html">配置自己的 docker-registry 服务</a></h2>
-<div class='article-meta'>
-<ul class='no-bullet credit'>
-<li class='date'>
-<i class='fa fa-calendar'></i>
-<a href='/calendar/2015.html'>2015</a>&nbsp;/&nbsp;<a href='/calendar/2015/04.html'>4</a>&nbsp;/&nbsp;<a href='/calendar/2015/04/20.html'>20</a>
-</li>
-<li class='author'>
-<i class='fa fa-user'></i>
-Michael Ding
-</li>
-</ul>
-<div class='tags'>
-<a class="button secondary round extiny" href="/tags/开发.html">开发</a>
-<a class="button secondary round extiny" href="/tags/效率.html">效率</a>
-<a class="button secondary round extiny" href="/tags/运维.html">运维</a>
-</div>
-</div>
-<div class='cell markdown'>
-<p>鉴于 docker 官网在国内的访问速度，在我们(暴走漫画)大量地将开发/部署环境迁移到 docker 以后，我们考虑自建 docker registry 服务。</p>
-
-<p>docker registry 的 github 地址是 <a href="https://github.com/docker/docker-registry">https://github.com/docker/docker-registry</a>。是一个基于 python 写的 web service.</p>
-
-<p>docker registry 最新的安装方式非常简单：<code>docker run -p 5000:5000 registry
-</code>。
-...</p>
-</div>
-<p class='readmore'>
-<a class="button primary radius small" href="/2015/04/20/setup-docker-registry.html">阅读全文&rarr;</a>
 </p>
 
 

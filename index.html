@@ -117,7 +117,9 @@
 <a class="button secondary round extiny" href="/tags/数据库.html">数据库</a>
 <a class="button secondary round extiny" href="/tags/redis.html">Redis</a>
 <a class="button secondary round extiny" href="/tags/分布式.html">分布式</a>
+<a class="button secondary round extiny" href="/tags/分布式数据库相关理论.html">分布式数据库相关理论</a>
 <a class="button secondary round extiny" href="/tags/容器计算.html">容器计算</a>
+<a class="button secondary round extiny" href="/tags/暴走漫画容器实践系列.html">暴走漫画容器实践系列</a>
 </div>
 <hr>
 <ul class='no-bullet media'>
@@ -140,7 +142,76 @@
 </div>
 <div class='large-9 large-pull-3 small-12 columns'>
 <div class='right-content'>
-<h2><a href="/2015/09/29/暴走漫画Docker实践.html">暴走漫画 Docker 实践——Dockone 分享</a></h2>
+<h2><a href="/2015/10/09/搭建-etcd-集群.html">搭建 etcd 集群 - 暴走漫画容器实践系列 Part3</a></h2>
+<div class='article-meta'>
+<ul class='no-bullet credit'>
+<li class='date'>
+<i class='fa fa-calendar'></i>
+<a href='/calendar/2015.html'>2015</a>&nbsp;/&nbsp;<a href='/calendar/2015/10.html'>10</a>&nbsp;/&nbsp;<a href='/calendar/2015/10/09.html'>9</a>
+</li>
+<li class='author'>
+<i class='fa fa-user'></i>
+Michael Ding
+</li>
+</ul>
+<div class='tags'>
+<a class="button secondary round extiny" href="/tags/分布式.html">分布式</a>
+<a class="button secondary round extiny" href="/tags/运维.html">运维</a>
+<a class="button secondary round extiny" href="/tags/暴走漫画容器实践系列.html">暴走漫画容器实践系列</a>
+</div>
+</div>
+<div class='cell markdown'>
+<p><code>etcd</code> 是一个高可用的分布式 key-value(键值) 存储系统。在暴漫我们用他用来做配置管理和服务发现。</p>
+
+<p>这一次我们主要介绍关于 etcd 集群的搭建与管理。</p>
+
+<h2>1. etcd 集群概述</h2>
+
+<p>首先我们需要理解，<code>etcd</code> 是一个分布式的 key-value 存储系统，所以其基本原理和前面我们介绍过的
+<a href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9B%B8%E5%85%B3%E7%90%86%E8%AE%BA.html">分布式数据库相关理论</a> 是一致的。</p>
+
+<h3>两种不同的 node(节点)</h3>
+
+<p>值得注意的是，为了方便使用，<code>etcd</code> 引入了 <code>proxy</code> 的概念，所以 <code>etcd</code> 的节点分为两种：<code>集群节点</code>和<code>代理节点</code>。</p>
+...
+</div>
+<p class='readmore'>
+<a class="button primary radius small" href="/2015/10/09/搭建-etcd-集群.html">阅读全文&rarr;</a>
+</p>
+
+<hr>
+<h2><a href="/2015/10/01/Docker-Docker-开源容器简介.html"></a></h2>
+<div class='article-meta'>
+<ul class='no-bullet credit'>
+<li class='date'>
+<i class='fa fa-calendar'></i>
+<a href='/calendar/2015.html'>2015</a>&nbsp;/&nbsp;<a href='/calendar/2015/10.html'>10</a>&nbsp;/&nbsp;<a href='/calendar/2015/10/01.html'>1</a>
+</li>
+<li class='author'>
+<i class='fa fa-user'></i>
+
+</li>
+</ul>
+<div class='tags'>
+</div>
+</div>
+<div class='cell markdown'>
+<hr>
+
+<p>title: Docker: 开源容器简介 - 暴走漫画容器实践系列 Part2
+date: 2015-10-01
+author: Michael Ding
+tags:
+- 分布式
+- 容器
+- 暴走漫画容器实践系列</p>
+
+<h2>published: false</h2>
+
+</div>
+
+<hr>
+<h2><a href="/2015/09/29/在Dockone的分享.html">在 Dockone 的分享 - 暴走漫画容器实践系列 Part1</a></h2>
 <div class='article-meta'>
 <ul class='no-bullet credit'>
 <li class='date'>
@@ -155,6 +226,7 @@ Michael Ding
 <div class='tags'>
 <a class="button secondary round extiny" href="/tags/分布式.html">分布式</a>
 <a class="button secondary round extiny" href="/tags/容器计算.html">容器计算</a>
+<a class="button secondary round extiny" href="/tags/暴走漫画容器实践系列.html">暴走漫画容器实践系列</a>
 </div>
 </div>
 <div class='cell markdown'>
@@ -168,7 +240,7 @@ Docker 在暴漫中的应用主要包括：
 * 开发环境的 service ...</p>
 </div>
 <p class='readmore'>
-<a class="button primary radius small" href="/2015/09/29/暴走漫画Docker实践.html">阅读全文&rarr;</a>
+<a class="button primary radius small" href="/2015/09/29/在Dockone的分享.html">阅读全文&rarr;</a>
 </p>
 
 <hr>
@@ -220,6 +292,7 @@ Michael Ding
 <div class='tags'>
 <a class="button secondary round extiny" href="/tags/分布式.html">分布式</a>
 <a class="button secondary round extiny" href="/tags/数据库.html">数据库</a>
+<a class="button secondary round extiny" href="/tags/分布式数据库相关理论.html">分布式数据库相关理论</a>
 </div>
 </div>
 <div class='cell markdown'>
@@ -261,6 +334,7 @@ Michael Ding
 <div class='tags'>
 <a class="button secondary round extiny" href="/tags/分布式.html">分布式</a>
 <a class="button secondary round extiny" href="/tags/数据库.html">数据库</a>
+<a class="button secondary round extiny" href="/tags/分布式数据库相关理论.html">分布式数据库相关理论</a>
 </div>
 </div>
 <div class='cell markdown'>
@@ -294,6 +368,7 @@ Michael Ding
 <div class='tags'>
 <a class="button secondary round extiny" href="/tags/分布式.html">分布式</a>
 <a class="button secondary round extiny" href="/tags/数据库.html">数据库</a>
+<a class="button secondary round extiny" href="/tags/分布式数据库相关理论.html">分布式数据库相关理论</a>
 </div>
 </div>
 <div class='cell markdown'>
@@ -324,6 +399,7 @@ Michael Ding
 <div class='tags'>
 <a class="button secondary round extiny" href="/tags/分布式.html">分布式</a>
 <a class="button secondary round extiny" href="/tags/数据库.html">数据库</a>
+<a class="button secondary round extiny" href="/tags/分布式数据库相关理论.html">分布式数据库相关理论</a>
 </div>
 </div>
 <div class='cell markdown'>
@@ -413,73 +489,13 @@ Michael Ding
 <a class="button primary radius small" href="/2015/03/15/Redis-Can-t-save-in-background-fork-Cannot-allocate-memory.html">阅读全文&rarr;</a>
 </p>
 
-<hr>
-<h2><a href="/2015/03/10/Shell常用快捷键.html">Shell 常用快捷键</a></h2>
-<div class='article-meta'>
-<ul class='no-bullet credit'>
-<li class='date'>
-<i class='fa fa-calendar'></i>
-<a href='/calendar/2015.html'>2015</a>&nbsp;/&nbsp;<a href='/calendar/2015/03.html'>3</a>&nbsp;/&nbsp;<a href='/calendar/2015/03/10.html'>10</a>
-</li>
-<li class='author'>
-<i class='fa fa-user'></i>
-Michael Ding
-</li>
+<div class='pagination-centered'>
+<ul class='pagination'>
+<li class='current unavailable'><a href="#">1</a></li>
+<li><a href="/p2/">2</a></li>
+<li class='arrow'><a href="/p2/">更早 &raquo;</a></li>
 </ul>
-<div class='tags'>
-<a class="button secondary round extiny" href="/tags/开发.html">开发</a>
-<a class="button secondary round extiny" href="/tags/效率.html">效率</a>
-<a class="button secondary round extiny" href="/tags/运维.html">运维</a>
 </div>
-</div>
-<div class='cell markdown'>
-<ul>
-<li>Ctrl + a ：移到命令行首</li>
-<li>Ctrl + e ：移到命令行尾</li>
-<li>Ctrl + f ：-&gt; (向右)</li>
-<li>Ctrl + b ：&lt;- (向左)</li>
-<li>Ctrl + w ：从光标处删除至字首(删除一个单词)</li>
-<li>Ctrl + p：历史中的上一条命令 (向上)</li>
-<li>Ctrl + n：历史中的下一条命令 (向下)</li>
-<li>Ctrl + r：搜索命令历史 (重复按键以切换不同的搜索结果)</li>
-</ul>
-
-</div>
-
-<hr>
-<h2><a href="/2015/02/27/利用vagrant构建开发环境.html">利用 vagrant 构建开发环境</a></h2>
-<div class='article-meta'>
-<ul class='no-bullet credit'>
-<li class='date'>
-<i class='fa fa-calendar'></i>
-<a href='/calendar/2015.html'>2015</a>&nbsp;/&nbsp;<a href='/calendar/2015/02.html'>2</a>&nbsp;/&nbsp;<a href='/calendar/2015/02/27.html'>27</a>
-</li>
-<li class='author'>
-<i class='fa fa-user'></i>
-Michael Ding
-</li>
-</ul>
-<div class='tags'>
-<a class="button secondary round extiny" href="/tags/开发.html">开发</a>
-<a class="button secondary round extiny" href="/tags/效率.html">效率</a>
-<a class="button secondary round extiny" href="/tags/运维.html">运维</a>
-</div>
-</div>
-<div class='cell markdown'>
-<h2>Vagrant 简介</h2>
-
-<p>Vagrant 可以用来快速地搭建开发环境。</p>
-
-<p>Vagrant 可以看作是一个自动化地虚拟机管理程序。开发环境运行在虚拟机中，例如 <a href="https://www.virtualbox.org/">virtualbox</a>, <a href="http://www.vmware.com/">vmware</a> 等虚拟机。
-可以将虚拟机的配置信息，包括：cpu，内存，网络，文件共享，初始化工作等等写在一个基于 Ruby 语法的配置文件中，
-然后通过简单的 vagrant 命令即可以实现虚拟机的创建，开关机，睡眠唤醒，打包等等一系列操作。非常方便。</p>
-
-<p>如果时间允许，可以通过这个<a href="http://happycasts.net/episodes/105">10分钟左右的视频</a>来对 Vagrant...</p>
-</div>
-<p class='readmore'>
-<a class="button primary radius small" href="/2015/02/27/利用vagrant构建开发环境.html">阅读全文&rarr;</a>
-</p>
-
 
 </div>
 </div>
@@ -556,7 +572,7 @@ Michael Ding
 </div>
 <![endif]-->
 <!-- Javascript -->
-<script src="/javascripts/application-a4c9af02.js" type="text/javascript"></script>
+<script src="/javascripts/application-d0b6cd5a.js" type="text/javascript"></script>
 
 <script>
   var option = {

@@ -5,14 +5,324 @@
   <id>http://freestorm.org/</id>
   <link href="http://freestorm.org/"/>
   <link href="http://freestorm.org/feed.xml" rel="self"/>
-  <updated>2015-09-29T00:00:00+08:00</updated>
+  <updated>2015-10-09T00:00:00+08:00</updated>
   <author>
     <name>自由风暴</name>
   </author>
   <entry>
-    <title>暴走漫画 Docker 实践——Dockone 分享</title>
-    <link rel="alternate" href="/2015/09/29/暴走漫画Docker实践.html"/>
-    <id>/2015/09/29/暴走漫画Docker实践.html</id>
+    <title>搭建 etcd 集群 - 暴走漫画容器实践系列 Part3</title>
+    <link rel="alternate" href="/2015/10/09/搭建-etcd-集群.html"/>
+    <id>/2015/10/09/搭建-etcd-集群.html</id>
+    <published>2015-10-09T00:00:00+08:00</published>
+    <updated>2015-10-09T00:00:00+08:00</updated>
+    <author>
+      <name>Michael Ding</name>
+    </author>
+    <summary type="html">&lt;p&gt;&lt;code&gt;etcd&lt;/code&gt; 是一个高可用的分布式 key-value(键值) 存储系统。在暴漫我们用他用来做配置管理和服务发现。&lt;/p&gt;
+
+&lt;p&gt;这一次我们主要介绍关于 etcd 集群的搭建与管理。&lt;/p&gt;
+
+&lt;h2&gt;1. etcd 集群概述&lt;/h2&gt;
+
+&lt;p&gt;首先我们需要理解，&lt;code&gt;etcd&lt;/code&gt; 是一个分布式的 key-value 存储系统，所以其基本原理和前面我们介绍过的
+&lt;a href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9B%B8%E5%85%B3%E7%90%86%E8%AE%BA.html"&gt;分布式数据库相关理论&lt;/a&gt; 是一致的。&lt;/p&gt;
+
+&lt;h3&gt;两种不同的 node(节点)&lt;/h3&gt;
+
+&lt;p&gt;值得注意的是，为了方便使用，&lt;code&gt;etcd&lt;/code&gt; 引入了 &lt;code&gt;proxy&lt;/code&gt; 的概念，所以 &lt;code&gt;etcd&lt;/code&gt; 的节点分为两种：&lt;code&gt;集群节点&lt;/code&gt;和&lt;code&gt;代理节点&lt;/code&gt;。&lt;/p&gt;
+...</summary>
+    <content type="html">&lt;p&gt;&lt;code&gt;etcd&lt;/code&gt; 是一个高可用的分布式 key-value(键值) 存储系统。在暴漫我们用他用来做配置管理和服务发现。&lt;/p&gt;
+
+&lt;p&gt;这一次我们主要介绍关于 etcd 集群的搭建与管理。&lt;/p&gt;
+
+&lt;h2&gt;1. etcd 集群概述&lt;/h2&gt;
+
+&lt;p&gt;首先我们需要理解，&lt;code&gt;etcd&lt;/code&gt; 是一个分布式的 key-value 存储系统，所以其基本原理和前面我们介绍过的
+&lt;a href="/tags/分布式数据库相关理论.html"&gt;分布式数据库相关理论&lt;/a&gt; 是一致的。&lt;/p&gt;
+
+&lt;h3&gt;两种不同的 node(节点)&lt;/h3&gt;
+
+&lt;p&gt;值得注意的是，为了方便使用，&lt;code&gt;etcd&lt;/code&gt; 引入了 &lt;code&gt;proxy&lt;/code&gt; 的概念，所以 &lt;code&gt;etcd&lt;/code&gt; 的节点分为两种：&lt;code&gt;集群节点&lt;/code&gt;和&lt;code&gt;代理节点&lt;/code&gt;。&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;集群节点&lt;/code&gt; 和 &lt;code&gt;代理节点&lt;/code&gt; 在使用上几乎没有任何区别。这使得我们可以在每台机器上都安装 &lt;code&gt;etcd&lt;/code&gt;，进而把 &lt;code&gt;etcd&lt;/code&gt; 当作本地服务来使用(通过 0.0.0.0)。
+他们的区别在于：内部原理不同。
+集群节点是真正的 &lt;code&gt;etcd&lt;/code&gt; 集群的构成者，这些节点负责数据存取，集群管理等等。
+代理节点可以理解为一个反向代理，它只是简单的接受请求，转发请求给 &lt;code&gt;etcd&lt;/code&gt; 集群。&lt;/p&gt;
+
+&lt;h3&gt;集群大小与容错&lt;/h3&gt;
+
+&lt;p&gt;集群的大小指集群节点的个数。根据 &lt;code&gt;etcd&lt;/code&gt; 的分布式数据冗余策略，集群节点越多，容错能力(Failure Tolerance)越强，同时写性能也会越差。
+所以关于集群大小的优化，其实就是容错和写性能的一个平衡。&lt;/p&gt;
+
+&lt;p&gt;另外， etcd 推荐使用 &lt;code&gt;奇数&lt;/code&gt; 作为集群节点个数。因为奇数个节点与和其配对的偶数个节点相比(比如 3节点和4节点对比)，
+容错能力相同，却可以少一个节点。&lt;/p&gt;
+
+&lt;p&gt;所以综合考虑性能和容错能力，etcd 官方文档推荐的 etcd 集群大小是 &lt;strong&gt;3&lt;/strong&gt;, &lt;strong&gt;5&lt;/strong&gt;, &lt;strong&gt;7&lt;/strong&gt;。至于到底选择 3,5 还是 7，根据需要的容错能力而定。&lt;/p&gt;
+
+&lt;p&gt;关于节点数和容错能力对应关系，如下表所示：&lt;/p&gt;
+
+&lt;table&gt;&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;集群大小&lt;/th&gt;
+&lt;th&gt;最大容错&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;1&lt;/td&gt;
+&lt;td&gt;&lt;strong&gt;0&lt;/strong&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;3&lt;/td&gt;
+&lt;td&gt;&lt;strong&gt;1&lt;/strong&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;4&lt;/td&gt;
+&lt;td&gt;1&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;5&lt;/td&gt;
+&lt;td&gt;&lt;strong&gt;2&lt;/strong&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;6&lt;/td&gt;
+&lt;td&gt;2&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;7&lt;/td&gt;
+&lt;td&gt;&lt;strong&gt;3&lt;/strong&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;8&lt;/td&gt;
+&lt;td&gt;3&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;9&lt;/td&gt;
+&lt;td&gt;&lt;strong&gt;4&lt;/strong&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;&lt;/table&gt;
+
+&lt;h2&gt;2. etcd 集群的搭建(初始化一个 etcd 集群)&lt;/h2&gt;
+
+&lt;p&gt;这里说的搭建指“从无到有”搭建。关于在已有集群中添加减少集群节点，属于下面&amp;ldquo;&lt;strong&gt;第3节:etcd 集群的管理&lt;/strong&gt;&amp;quot;的内容。&lt;/p&gt;
+
+&lt;p&gt;etcd 集群的搭建有三种方式，包括：static 方式，etcd discovery 方式 和 DNS discovery。&lt;/p&gt;
+
+&lt;p&gt;这里，我们以一个例子来讲解 etcd 集群各种方式的搭建。假设我们需要搭建一个3节点的 etcd 集群。这三个节点的 name(我们需要给每个节点取个名字)和 ip 分别是：&lt;/p&gt;
+
+&lt;table&gt;&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;name&lt;/th&gt;
+&lt;th&gt;ip&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;etcd0&lt;/td&gt;
+&lt;td&gt;10.0.0.10&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;etcd1&lt;/td&gt;
+&lt;td&gt;10.0.0.11&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;etcd2&lt;/td&gt;
+&lt;td&gt;10.0.0.12&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;&lt;/table&gt;
+
+&lt;h3&gt;2.1 static 方式&lt;/h3&gt;
+
+&lt;p&gt;static 方式是最简单的一种搭建 etcd 的方式。
+不像其他两种方式， static 方式不需要任何额外的服务，只需要你知道你准备用来运行 etcd 的所有节点(的name和ip)。&lt;/p&gt;
+
+&lt;p&gt;本例中，我们来看看如何在3个节点上构建 &lt;code&gt;etcd&lt;/code&gt; 集群。&lt;/p&gt;
+
+&lt;p&gt;首先我们需要构造一个描述集群所有节点的参数，这个参数可以以&lt;strong&gt;命令行参数的方式&lt;/strong&gt;传给 &lt;code&gt;etcd&lt;/code&gt; 程序，也可以以&lt;strong&gt;环境变量的方式&lt;/strong&gt;。&lt;/p&gt;
+
+&lt;p&gt;如果用&lt;strong&gt;命令行参数&lt;/strong&gt;，应该将下列参数附在 &lt;code&gt;etcd&lt;/code&gt; 的启动命令后面：&lt;/p&gt;
+&lt;pre&gt;&lt;code class="highlight shell"&gt;-initial-cluster &lt;span class="nv"&gt;etcd0&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;http://10.0.1.10:2380,etcd1&lt;span class="o"&gt;=&lt;/span&gt;http://10.0.1.11:2380,etcd2&lt;span class="o"&gt;=&lt;/span&gt;http://10.0.1.12:2380 &lt;span class="se"&gt;\&lt;/span&gt;
+  -initial-cluster-state new
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;其中 &lt;code&gt;-initial-cluster-state new&lt;/code&gt; 表示这是在从无到有搭建 etcd 集群。
+&lt;code&gt;-initial-cluster&lt;/code&gt; 参数描述了这个新集群中总共有哪些节点，其中每个节点用 &lt;code&gt;name=ip&lt;/code&gt;的形式描述，节点之间用&lt;code&gt;,&lt;/code&gt;分隔。&lt;/p&gt;
+
+&lt;p&gt;如果用&lt;strong&gt;环境变量&lt;/strong&gt;，应该在启动 &lt;code&gt;etcd&lt;/code&gt; 时，加入如下环境变量：&lt;/p&gt;
+&lt;pre&gt;&lt;code class="highlight shell"&gt;&lt;span class="nv"&gt;ETCD_INITIAL_CLUSTER&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;"etcd0=http://10.0.1.10:2380,etcd1=http://10.0.1.11:2380,etcd2=http://10.0.1.12:2380"&lt;/span&gt;
+&lt;span class="nv"&gt;ETCD_INITIAL_CLUSTER_STATE&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;new
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;code&gt;ETCD_INITIAL_CLUSTER&lt;/code&gt; 变量和 &lt;code&gt;-initial-cluster&lt;/code&gt; 作用相同,
+&lt;code&gt;ETCD_INITIAL_CLUSTER_STATE&lt;/code&gt; 变量和 &lt;code&gt;-initial-cluster-state&lt;/code&gt; 作用相同。&lt;/p&gt;
+
+&lt;p&gt;接着，分别在3个节点上启动 &lt;code&gt;etcd&lt;/code&gt;，以&lt;strong&gt;命令行参数&lt;/strong&gt;方式启动为例：&lt;/p&gt;
+&lt;pre&gt;&lt;code class="highlight shell"&gt;&lt;span class="gp"&gt;$ &lt;/span&gt;etcd -name etcd0 -initial-advertise-peer-urls http://10.0.1.10:2380 &lt;span class="se"&gt;\&lt;/span&gt;
+  -listen-peer-urls http://10.0.1.10:2380 &lt;span class="se"&gt;\&lt;/span&gt;
+  -listen-client-urls http://10.0.1.10:2379,http://127.0.0.1:2379 &lt;span class="se"&gt;\&lt;/span&gt;
+  -advertise-client-urls http://10.0.1.10:2379 &lt;span class="se"&gt;\&lt;/span&gt;
+  -initial-cluster-token my-etcd-cluster &lt;span class="se"&gt;\&lt;/span&gt;
+  -initial-cluster &lt;span class="nv"&gt;etcd0&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;http://10.0.1.10:2380,etcd1&lt;span class="o"&gt;=&lt;/span&gt;http://10.0.1.11:2380,etcd2&lt;span class="o"&gt;=&lt;/span&gt;http://10.0.1.12:2380 &lt;span class="se"&gt;\&lt;/span&gt;
+  -initial-cluster-state new
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code class="highlight shell"&gt;&lt;span class="gp"&gt;$ &lt;/span&gt;etcd -name etcd1 -initial-advertise-peer-urls http://10.0.1.11:2380 &lt;span class="se"&gt;\&lt;/span&gt;
+  -listen-peer-urls http://10.0.1.11:2380 &lt;span class="se"&gt;\&lt;/span&gt;
+  -listen-client-urls http://10.0.1.11:2379,http://127.0.0.1:2379 &lt;span class="se"&gt;\&lt;/span&gt;
+  -advertise-client-urls http://10.0.1.11:2379 &lt;span class="se"&gt;\&lt;/span&gt;
+  -initial-cluster-token my-etcd-cluster &lt;span class="se"&gt;\&lt;/span&gt;
+  -initial-cluster &lt;span class="nv"&gt;etcd0&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;http://10.0.1.10:2380,etcd1&lt;span class="o"&gt;=&lt;/span&gt;http://10.0.1.11:2380,etcd2&lt;span class="o"&gt;=&lt;/span&gt;http://10.0.1.12:2380 &lt;span class="se"&gt;\&lt;/span&gt;
+  -initial-cluster-state new
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code class="highlight shell"&gt;&lt;span class="gp"&gt;$ &lt;/span&gt;etcd -name etcd2 -initial-advertise-peer-urls http://10.0.1.12:2380 &lt;span class="se"&gt;\&lt;/span&gt;
+  -listen-peer-urls http://10.0.1.12:2380 &lt;span class="se"&gt;\&lt;/span&gt;
+  -listen-client-urls http://10.0.1.12:2379,http://127.0.0.1:2379 &lt;span class="se"&gt;\&lt;/span&gt;
+  -advertise-client-urls http://10.0.1.12:2379 &lt;span class="se"&gt;\&lt;/span&gt;
+  -initial-cluster-token my-etcd-cluster &lt;span class="se"&gt;\&lt;/span&gt;
+  -initial-cluster &lt;span class="nv"&gt;etcd0&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;http://10.0.1.10:2380,etcd1&lt;span class="o"&gt;=&lt;/span&gt;http://10.0.1.11:2380,etcd2&lt;span class="o"&gt;=&lt;/span&gt;http://10.0.1.12:2380 &lt;span class="se"&gt;\&lt;/span&gt;
+  -initial-cluster-state new
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;strong&gt;注意&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;值得注意的是，无论是 &lt;code&gt;-initial-cluster&lt;/code&gt;参数，还是对应的环境变量，只有在第一次启动 &lt;code&gt;etcd&lt;/code&gt; 的时候才起作用。
+之后如果重启 &lt;code&gt;etcd&lt;/code&gt;，这个参数或环境变量会被自动忽略。所以当成功初始化了一个 &lt;code&gt;etcd&lt;/code&gt; 集群以后，你就不在需要这个参数或环境变量了。&lt;/p&gt;
+
+&lt;h3&gt;2.2 etcd discovery 方式&lt;/h3&gt;
+
+&lt;p&gt;很多时候，你只知道你要搭建一个多大(包含多少节点)的集群，但是并不能事先知道这几个节点的 ip，从而无法使用 &lt;code&gt;-initial-cluster&lt;/code&gt; 参数。
+这个时候，你就需要使用 &lt;code&gt;discovery&lt;/code&gt; 的方式来搭建 &lt;code&gt;etcd&lt;/code&gt; 集群。discovery 方式有两种：&lt;code&gt;etcd discovery&lt;/code&gt; 和 &lt;code&gt;DNS discovery&lt;/code&gt;。&lt;/p&gt;
+
+&lt;p&gt;这里我们先介绍下 &lt;code&gt;etcd discovery&lt;/code&gt; 方式，&lt;code&gt;etcd discovery&lt;/code&gt; 有两种：&lt;code&gt;自定义的 etcd discovery&lt;/code&gt; 和 &lt;code&gt;公共 etcd discovery&lt;/code&gt;&lt;/p&gt;
+
+&lt;h4&gt;2.2.1 自定义的 etcd discovery 服务&lt;/h4&gt;
+
+&lt;p&gt;这种方式就是&lt;strong&gt;利用一个已有的 &lt;code&gt;etcd&lt;/code&gt; 集群来提供 &lt;code&gt;discovery&lt;/code&gt; 服务，从而搭建一个新的 &lt;code&gt;etcd&lt;/code&gt; 集群。&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;假设已有的 &lt;code&gt;etcd&lt;/code&gt; 集群的一个访问地址是：&lt;code&gt;myetcd.local&lt;/code&gt;，那么我们首先需要在已有 &lt;code&gt;etcd&lt;/code&gt; 中创建一个特殊的 key，方法如下：&lt;/p&gt;
+&lt;pre&gt;&lt;code class="highlight plaintext"&gt;$ curl -X PUT https://myetcd.local/v2/keys/discovery/6c007a14875d53d9bf0ef5a6fc0257c817f0fb83/_config/size -d value=3
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;其中 &lt;code&gt;value=3&lt;/code&gt; 表示本集群的大小，即: 有多少集群节点。而 &lt;code&gt;6c007a14875d53d9bf0ef5a6fc0257c817f0fb83&lt;/code&gt; 就是用来做 discovery 的 token。&lt;/p&gt;
+
+&lt;p&gt;接下来你在 3 个节点上分别启动 &lt;code&gt;etcd&lt;/code&gt; 程序，并加上刚刚的 token。
+加 token 的方式同样也有 &lt;strong&gt;命令行参数&lt;/strong&gt; 和 &lt;strong&gt;环境变量&lt;/strong&gt; 两种。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;命令行参数:&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code class="highlight plaintext"&gt;-discovery https://myetcd.local/v2/keys/discovery/6c007a14875d53d9bf0ef5a6fc0257c817f0fb83
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;strong&gt;环境变量&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code class="highlight plaintext"&gt;ETCD_DISCOVERY=https://myetcd.local/v2/keys/discovery/6c007a14875d53d9bf0ef5a6fc0257c817f0fb83
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;以&lt;strong&gt;命令行参数&lt;/strong&gt;启动方式为例：&lt;/p&gt;
+&lt;pre&gt;&lt;code class="highlight shell"&gt;&lt;span class="gp"&gt;$ &lt;/span&gt;etcd -name etcd0 -initial-advertise-peer-urls http://10.0.1.10:2380 &lt;span class="se"&gt;\&lt;/span&gt;
+  -listen-peer-urls http://10.0.1.10:2380 &lt;span class="se"&gt;\&lt;/span&gt;
+  -listen-client-urls http://10.0.1.10:2379,http://127.0.0.1:2379 &lt;span class="se"&gt;\&lt;/span&gt;
+  -advertise-client-urls http://10.0.1.10:2379 &lt;span class="se"&gt;\&lt;/span&gt;
+  -discovery https://myetcd.local/v2/keys/discovery/6c007a14875d53d9bf0ef5a6fc0257c817f0fb83
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code class="highlight shell"&gt;&lt;span class="gp"&gt;$ &lt;/span&gt;etcd -name etcd1 -initial-advertise-peer-urls http://10.0.1.11:2380 &lt;span class="se"&gt;\&lt;/span&gt;
+  -listen-peer-urls http://10.0.1.11:2380 &lt;span class="se"&gt;\&lt;/span&gt;
+  -listen-client-urls http://10.0.1.11:2379,http://127.0.0.1:2379 &lt;span class="se"&gt;\&lt;/span&gt;
+  -advertise-client-urls http://10.0.1.11:2379 &lt;span class="se"&gt;\&lt;/span&gt;
+  -discovery https://myetcd.local/v2/keys/discovery/6c007a14875d53d9bf0ef5a6fc0257c817f0fb83
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code class="highlight shell"&gt;&lt;span class="gp"&gt;$ &lt;/span&gt;etcd -name etcd2 -initial-advertise-peer-urls http://10.0.1.12:2380 &lt;span class="se"&gt;\&lt;/span&gt;
+  -listen-peer-urls http://10.0.1.12:2380 &lt;span class="se"&gt;\&lt;/span&gt;
+  -listen-client-urls http://10.0.1.12:2379,http://127.0.0.1:2379 &lt;span class="se"&gt;\&lt;/span&gt;
+  -advertise-client-urls http://10.0.1.12:2379 &lt;span class="se"&gt;\&lt;/span&gt;
+  -discovery https://myetcd.local/v2/keys/discovery/6c007a14875d53d9bf0ef5a6fc0257c817f0fb83
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4&gt;2.2.2 公共 etcd discovery 服务&lt;/h4&gt;
+
+&lt;p&gt;如果没有已有的 &lt;code&gt;etcd&lt;/code&gt; 集群，也可以用 etcd 提供的公共服务: &lt;code&gt;discovery.etcd.io&lt;/code&gt;。
+步骤和 &lt;strong&gt;2.2.1&lt;/strong&gt; 节基本一致。&lt;/p&gt;
+
+&lt;p&gt;你得先创建一个用于 discovery 的 token，创建方式如下：&lt;/p&gt;
+&lt;pre&gt;&lt;code class="highlight shell"&gt;&lt;span class="gp"&gt;$ &lt;/span&gt;curl https://discovery.etcd.io/new?size&lt;span class="o"&gt;=&lt;/span&gt;3
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;返回：&lt;/p&gt;
+&lt;pre&gt;&lt;code class="highlight plaintext"&gt;https://discovery.etcd.io/3e86b59982e49066c5d813af1c2e2579cbf573de
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;返回值作为启动节点时的 &lt;code&gt;-discovery&lt;/code&gt; 参数或者 &lt;code&gt;ETCD_DISCOVERY&lt;/code&gt;环境变量的值。&lt;/p&gt;
+
+&lt;p&gt;以&lt;strong&gt;环境变量&lt;/strong&gt;启动方式为例：&lt;/p&gt;
+&lt;pre&gt;&lt;code class="highlight shell"&gt;&lt;span class="gp"&gt;$ &lt;/span&gt;&lt;span class="nv"&gt;ETCD_DISCOVERY&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;https://discovery.etcd.io/3e86b59982e49066c5d813af1c2e2579cbf573de &lt;span class="se"&gt;\&lt;/span&gt;
+etcd -name etcd0 -initial-advertise-peer-urls http://10.0.1.10:2380 &lt;span class="se"&gt;\&lt;/span&gt;
+  -listen-peer-urls http://10.0.1.10:2380 &lt;span class="se"&gt;\&lt;/span&gt;
+  -listen-client-urls http://10.0.1.10:2379,http://127.0.0.1:2379 &lt;span class="se"&gt;\&lt;/span&gt;
+  -advertise-client-urls http://10.0.1.10:2379 &lt;span class="se"&gt;\&lt;/span&gt;
+  -discovery https://discovery.etcd.io/3e86b59982e49066c5d813af1c2e2579cbf573de
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code class="highlight shell"&gt;&lt;span class="gp"&gt;$ &lt;/span&gt;&lt;span class="nv"&gt;ETCD_DISCOVERY&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;https://discovery.etcd.io/3e86b59982e49066c5d813af1c2e2579cbf573de &lt;span class="se"&gt;\&lt;/span&gt;
+etcd -name etcd1 -initial-advertise-peer-urls http://10.0.1.11:2380 &lt;span class="se"&gt;\&lt;/span&gt;
+  -listen-peer-urls http://10.0.1.11:2380 &lt;span class="se"&gt;\&lt;/span&gt;
+  -listen-client-urls http://10.0.1.11:2379,http://127.0.0.1:2379 &lt;span class="se"&gt;\&lt;/span&gt;
+  -advertise-client-urls http://10.0.1.11:2379 &lt;span class="se"&gt;\&lt;/span&gt;
+  -discovery https://discovery.etcd.io/3e86b59982e49066c5d813af1c2e2579cbf573de
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code class="highlight shell"&gt;&lt;span class="gp"&gt;$ &lt;/span&gt;&lt;span class="nv"&gt;ETCD_DISCOVERY&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;https://discovery.etcd.io/3e86b59982e49066c5d813af1c2e2579cbf573de &lt;span class="se"&gt;\&lt;/span&gt;
+etcd -name etcd2 -initial-advertise-peer-urls http://10.0.1.12:2380 &lt;span class="se"&gt;\&lt;/span&gt;
+  -listen-peer-urls http://10.0.1.12:2380 &lt;span class="se"&gt;\&lt;/span&gt;
+  -listen-client-urls http://10.0.1.12:2379,http://127.0.0.1:2379 &lt;span class="se"&gt;\&lt;/span&gt;
+  -advertise-client-urls http://10.0.1.12:2379 &lt;span class="se"&gt;\&lt;/span&gt;
+  -discovery https://discovery.etcd.io/3e86b59982e49066c5d813af1c2e2579cbf573de
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;2.2.3 注意点&lt;/p&gt;
+
+&lt;p&gt;值得注意的是：如果实际启动的 etcd 节点个数&lt;strong&gt;&lt;code&gt;大于&lt;/code&gt;&lt;/strong&gt; discovery token创建时指定的&lt;code&gt;size&lt;/code&gt;，
+多余的节点会自动变为 &lt;code&gt;proxy&lt;/code&gt; 节点。&lt;/p&gt;
+
+&lt;h3&gt;2.3 DNS discovery 方式&lt;/h3&gt;
+
+&lt;p&gt;这个方式没有实践，而且对于一般团队实用性也不高，所以就不做分享了。&lt;/p&gt;
+
+&lt;h3&gt;2.4 后续&lt;/h3&gt;
+
+&lt;p&gt;到这里为止，我们已经有一个3节点的 &lt;code&gt;etcd&lt;/code&gt; 集群了，下一篇博客我会介绍如何进行 &lt;code&gt;etcd&lt;/code&gt; 集群的管理&lt;/p&gt;
+</content>
+  </entry>
+  <entry>
+    <title/>
+    <link rel="alternate" href="/2015/10/01/Docker-Docker-开源容器简介.html"/>
+    <id>/2015/10/01/Docker-Docker-开源容器简介.html</id>
+    <published>2015-10-01T00:00:00+08:00</published>
+    <updated>2015-10-01T00:00:00+08:00</updated>
+    <author>
+      <name>自由风暴</name>
+    </author>
+    <summary type="html">&lt;hr&gt;
+
+&lt;p&gt;title: Docker: 开源容器简介 - 暴走漫画容器实践系列 Part2
+date: 2015-10-01
+author: Michael Ding
+tags:
+- 分布式
+- 容器
+- 暴走漫画容器实践系列&lt;/p&gt;
+
+&lt;h2&gt;published: false&lt;/h2&gt;
+</summary>
+    <content type="html">&lt;hr&gt;
+
+&lt;p&gt;title: Docker: 开源容器简介 - 暴走漫画容器实践系列 Part2
+date: 2015-10-01
+author: Michael Ding
+tags:
+- 分布式
+- 容器
+- 暴走漫画容器实践系列&lt;/p&gt;
+
+&lt;h2&gt;published: false&lt;/h2&gt;
+</content>
+  </entry>
+  <entry>
+    <title>在 Dockone 的分享 - 暴走漫画容器实践系列 Part1</title>
+    <link rel="alternate" href="/2015/09/29/在Dockone的分享.html"/>
+    <id>/2015/09/29/在Dockone的分享.html</id>
     <published>2015-09-29T00:00:00+08:00</published>
     <updated>2015-09-29T00:00:00+08:00</updated>
     <author>
@@ -540,115 +850,6 @@ value: ['news xx', 'news xyy', 'news yyz']
 那么 拷贝1 存储在 vnode7(即：node3)上，拷贝2 存储在 vnode8(即：node4)上。&lt;/p&gt;
 
 &lt;p&gt;所以 Riak 对于冗余数据的存储策略是：&lt;strong&gt;将冗余数据依次存到下一个vnode中&lt;/strong&gt;。&lt;/p&gt;
-</content>
-  </entry>
-  <entry>
-    <title>Eventual Consistency(最终一致性) - 分布式数据库相关理论 Part2</title>
-    <link rel="alternate" href="/2015/04/23/Eventual-Consistency(最终一致性).html"/>
-    <id>/2015/04/23/Eventual-Consistency(最终一致性).html</id>
-    <published>2015-04-23T00:00:00+08:00</published>
-    <updated>2015-04-23T00:00:00+08:00</updated>
-    <author>
-      <name>Michael Ding</name>
-    </author>
-    <summary type="html">&lt;h2&gt;1. Eventual Consistency 概述&lt;/h2&gt;
-
-&lt;p&gt;分布式数据库必须要有 &lt;code&gt;分区容忍性(Partition Tolerant)&lt;/code&gt;，所以主要是在 &lt;code&gt;一致性(Consistent)&lt;/code&gt; 和 &lt;code&gt;可用性(Available)&lt;/code&gt; 之间做选择。
-虽然在 CAP 理论中，选择了 &lt;code&gt;Availability&lt;/code&gt; 就不可能得到真正的 &lt;code&gt;Consistency&lt;/code&gt;，但是你可以追求 &lt;code&gt;最终一致性(Evental Consistency)&lt;/code&gt;&lt;/p&gt;
-
-&lt;p&gt;&lt;code&gt;evental Consistency&lt;/code&gt; 背后的思路是：每个系统节点总是 &lt;code&gt;Available&lt;/code&gt; 的，...&lt;/p&gt;</summary>
-    <content type="html">&lt;h2&gt;1. Eventual Consistency 概述&lt;/h2&gt;
-
-&lt;p&gt;分布式数据库必须要有 &lt;code&gt;分区容忍性(Partition Tolerant)&lt;/code&gt;，所以主要是在 &lt;code&gt;一致性(Consistent)&lt;/code&gt; 和 &lt;code&gt;可用性(Available)&lt;/code&gt; 之间做选择。
-虽然在 CAP 理论中，选择了 &lt;code&gt;Availability&lt;/code&gt; 就不可能得到真正的 &lt;code&gt;Consistency&lt;/code&gt;，但是你可以追求 &lt;code&gt;最终一致性(Evental Consistency)&lt;/code&gt;&lt;/p&gt;
-
-&lt;p&gt;&lt;code&gt;evental Consistency&lt;/code&gt; 背后的思路是：每个系统节点总是 &lt;code&gt;Available&lt;/code&gt; 的，同时任何的写(修改数据)操作都会在后台同步给系统的其他节点。
-这意味着，在任意时刻，整个系统是&lt;code&gt;Inconsistent(不一致的)&lt;/code&gt;，然而从概率上讲，大多数的请求得到的值是准确的。&lt;/p&gt;
-
-&lt;p&gt;互联网的 DNS(域名服务) 就是最终一致性的一个非常好的例子。你注册了一个域名，
-这个新域名需要几天的时间才能通知给所有的 DNS 服务器。但是不管什么时候，你能够连接到的任意 DNS 服务器对你来说都是 &amp;lsquo;Available&amp;rsquo; 的。&lt;/p&gt;
-
-&lt;h2&gt;2. Eventual Consistency 小故事&lt;/h2&gt;
-
-&lt;p&gt;让我们接着之前的&lt;a href="/2015/04/22/理解CAP理论.html"&gt;小故事&lt;/a&gt;.&lt;/p&gt;
-
-&lt;p&gt;假设你不是深山里，是被抓到一个孤岛上造方舟。&lt;/p&gt;
-
-&lt;p&gt;&lt;code&gt;2015年7月3日&lt;/code&gt;——距离你被抓来造方舟已经将近3个月，你在孤岛的海边捡到了一个漂流瓶，里面写着：&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;最新一期暴走大事件是第四季第2期&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;所以你知道：最新一期暴走大事件至少是&lt;code&gt;第四季第2期&lt;/code&gt;。&lt;/p&gt;
-
-&lt;p&gt;假设暴漫的粉丝喜欢玩漂流瓶——只要暴走大事件有更新，就会把最新一期的暴走大事件写在纸上，然后通过漂流瓶扔向大海。
-这样，像你这样的被 &lt;code&gt;Partition&lt;/code&gt; 的人，总是能时不时地收到记录着最新一期暴走大事件是什么的漂流瓶。
-换句话说，虽然每一时刻，关于“最新一期暴走大事件是什么”你并不一定知道的是正确的答案，但你总是会 &lt;code&gt;eventually(最终)&lt;/code&gt; 知道正确答案。&lt;/p&gt;
-</content>
-  </entry>
-  <entry>
-    <title>理解 CAP 理论  - 分布式数据库相关理论 Part1</title>
-    <link rel="alternate" href="/2015/04/22/理解CAP理论.html"/>
-    <id>/2015/04/22/理解CAP理论.html</id>
-    <published>2015-04-22T00:00:00+08:00</published>
-    <updated>2015-04-22T00:00:00+08:00</updated>
-    <author>
-      <name>Michael Ding</name>
-    </author>
-    <summary type="html">&lt;p&gt;&lt;strong&gt;CAP&lt;/strong&gt; 是分布式数据库中的重要理论之一。为了更好的理解分布式数据库，我们需要对 CAP 理论有个简单的理解。&lt;/p&gt;
-
-&lt;h2&gt;1.CAP 概述&lt;/h2&gt;
-
-&lt;p&gt;&lt;strong&gt;CAP&lt;/strong&gt; 证明了，对于一个分布式数据库系统，存在这样三个指标：&lt;/p&gt;
-
-&lt;ul&gt;
-&lt;li&gt;
-&lt;strong&gt;C&lt;/strong&gt;&lt;em&gt;onsistent&lt;/em&gt;(一致性。写操作是 &lt;code&gt;原子&lt;/code&gt; 的，当写操作完成后，所有后续的读取操作获取得到的都必须是新值),&lt;/li&gt;
-&lt;li&gt;
-&lt;strong&gt;A&lt;/strong&gt;&lt;em&gt;vailable&lt;/em&gt;(可用性。只要还有一个节点服务器在运行，整个系统对于请求总是要返回结果)&lt;/li&gt;
-&lt;li&gt;
-&lt;strong&gt;P&lt;/strong&gt;&lt;em&gt;artition tolerant&lt;/em&gt;(分区容忍性。当节点服务器之间的通信中断后，即：出现网络...&lt;/li&gt;
-&lt;/ul&gt;</summary>
-    <content type="html">&lt;p&gt;&lt;strong&gt;CAP&lt;/strong&gt; 是分布式数据库中的重要理论之一。为了更好的理解分布式数据库，我们需要对 CAP 理论有个简单的理解。&lt;/p&gt;
-
-&lt;h2&gt;1.CAP 概述&lt;/h2&gt;
-
-&lt;p&gt;&lt;strong&gt;CAP&lt;/strong&gt; 证明了，对于一个分布式数据库系统，存在这样三个指标：&lt;/p&gt;
-
-&lt;ul&gt;
-&lt;li&gt;&lt;strong&gt;C&lt;/strong&gt;&lt;em&gt;onsistent&lt;/em&gt;(一致性。写操作是 &lt;code&gt;原子&lt;/code&gt; 的，当写操作完成后，所有后续的读取操作获取得到的都必须是新值),&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;A&lt;/strong&gt;&lt;em&gt;vailable&lt;/em&gt;(可用性。只要还有一个节点服务器在运行，整个系统对于请求总是要返回结果)&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;P&lt;/strong&gt;&lt;em&gt;artition tolerant&lt;/em&gt;(分区容忍性。当节点服务器之间的通信中断后，即：出现网络分区，整个系统还是能提供服务的)。&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;而你只能在这三个指标中同时照顾好两个。&lt;/p&gt;
-
-&lt;p&gt;根据 CAP 理论，当你在设计/使用分布式数据库时，你需要做出选择:在 Consistent, Available, Partition tolerant 中放弃什么。&lt;/p&gt;
-
-&lt;p&gt;Partition tolerant 是个架构选择(数据库是否是分布式)，所以一般而言，你需要选择是更在意 Consistent 还是 Available。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;理解 CAP 理论对于做出正确的选择是至关重要的。&lt;/strong&gt;&lt;/p&gt;
-
-&lt;h2&gt;2.CAP 小故事&lt;/h2&gt;
-
-&lt;p&gt;&lt;strong&gt;为了更好地理解 CAP，这里以现实生活中的例子做个类比&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;假设这个世界是一个巨大的分布式系统，关于暴走漫画的知识是系统中存储的数据，暴漫的粉丝是这个分布式系统中的一个个节点。&lt;/p&gt;
-
-&lt;p&gt;假设今天你刚刚看了最新一期暴走大事件(第三季43集)，而今天的日期是 &lt;code&gt;2015年4月18日&lt;/code&gt;，突然有一伙儿神秘人闯进你家门，把你抓到了深山里，让你参与建造方舟，并且与世隔绝。&lt;/p&gt;
-
-&lt;p&gt;时光如梭，一转眼 5 年过去了，到了 &lt;code&gt;2020年1月2日&lt;/code&gt;。方舟建成，你被送回了家乡。在回家的路上，你遇到一个路人，问了你一个问题：&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;暴走大事件最新一期是第几季第几集了？&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;这时候，你需要做一个选择：&lt;/p&gt;
-
-&lt;p&gt;你可以回答你知道的最新一期(第三季43集，5年前的最新一期)。如果你选择回答，那你就是 &lt;code&gt;Available&lt;/code&gt; 的。或者你可以选择不回答，因为你已经与世隔绝了 5  年，你知道你的答案很可能和世界上其余暴漫粉丝的答案不一致(&lt;code&gt;Consistent&lt;/code&gt;)，这样这个路人得不到答案，但是整个世界是 &lt;code&gt;Consistent&lt;/code&gt; 的。&lt;/p&gt;
-
-&lt;p&gt;即：你可以选择确保路人能得到答案(Available)，或者确保世界的一致性(Consistent)。&lt;/p&gt;
 </content>
   </entry>
 </feed>
