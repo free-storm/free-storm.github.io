@@ -163,37 +163,6 @@ Michael Ding
 </p>
 
 <hr>
-<h2><a href="/2015/10/01/Docker-Docker-开源容器简介.html"></a></h2>
-<div class='article-meta'>
-<ul class='no-bullet credit'>
-<li class='date'>
-<i class='fa fa-calendar'></i>
-<a href='/calendar/2015.html'>2015</a>&nbsp;/&nbsp;<a href='/calendar/2015/10.html'>10</a>&nbsp;/&nbsp;<a href='/calendar/2015/10/01.html'>1</a>
-</li>
-<li class='author'>
-<i class='fa fa-user'></i>
-
-</li>
-</ul>
-<div class='tags'>
-</div>
-</div>
-<div class='cell markdown'>
-<hr>
-
-<p>title: Docker: 开源容器简介 - 暴走漫画容器实践系列 Part2
-date: 2015-10-01
-author: Michael Ding
-tags:
-- 分布式
-- 容器
-- 暴走漫画容器实践系列</p>
-
-<h2>published: false</h2>
-
-</div>
-
-<hr>
 <h2><a href="/2015/09/29/在Dockone的分享.html">在 Dockone 的分享 - 暴走漫画容器实践系列 Part1</a></h2>
 <div class='article-meta'>
 <ul class='no-bullet credit'>
@@ -470,6 +439,41 @@ Michael Ding
 </div>
 <p class='readmore'>
 <a class="button primary radius small" href="/2015/04/20/setup-docker-registry.html">阅读全文&rarr;</a>
+</p>
+
+<hr>
+<h2><a href="/2015/03/15/Redis-Can-t-save-in-background-fork-Cannot-allocate-memory.html">Redis 相关的 Linux 内核参数</a></h2>
+<div class='article-meta'>
+<ul class='no-bullet credit'>
+<li class='date'>
+<i class='fa fa-calendar'></i>
+<a href='/calendar/2015.html'>2015</a>&nbsp;/&nbsp;<a href='/calendar/2015/03.html'>3</a>&nbsp;/&nbsp;<a href='/calendar/2015/03/15.html'>15</a>
+</li>
+<li class='author'>
+<i class='fa fa-user'></i>
+Michael Ding
+</li>
+</ul>
+<div class='tags'>
+<a class="button secondary round extiny" href="/tags/数据库.html">数据库</a>
+<a class="button secondary round extiny" href="/tags/redis.html">Redis</a>
+</div>
+</div>
+<div class='cell markdown'>
+<h2>问题 1</h2>
+
+<p>默认情况下，redis 的持久化方案是 RDB，对于数据丢失的风险相对较高。
+如果对于持久化要求较高，一般会使用 AOF。</p>
+
+<p>不过使用 AOF 后，正常情况下，总会碰到 <code>Can’t save in background: fork: Cannot allocate memory</code> 这样的错误。</p>
+
+<p>这个错误会出现的原因如下：</p>
+
+<p>Redis 的后台持久化基于操作系统 <code>fork</code> 的 <code>copy-on-write</code>特性。redis 会 fork 一个子进程，这个子进程是
+父进程的完整拷贝。然...</p>
+</div>
+<p class='readmore'>
+<a class="button primary radius small" href="/2015/03/15/Redis-Can-t-save-in-background-fork-Cannot-allocate-memory.html">阅读全文&rarr;</a>
 </p>
 
 <div class='pagination-centered'>
