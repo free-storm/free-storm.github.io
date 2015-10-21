@@ -584,6 +584,121 @@ A: 用户每次访问都有日志，日志里包括访问内容以及用户标�
 </content>
   </entry>
   <entry>
+    <title>Spark 集群概述</title>
+    <link rel="alternate" href="/2015/07/22/spark-cluster.html"/>
+    <id>/2015/07/22/spark-cluster.html</id>
+    <published>2015-07-22T00:00:00+08:00</published>
+    <updated>2015-07-22T00:00:00+08:00</updated>
+    <author>
+      <name>Michael Ding</name>
+    </author>
+    <summary type="html">&lt;p&gt;本篇博客简述 Spark 集群相关的概念。&lt;/p&gt;
+
+&lt;h2&gt;概述&lt;/h2&gt;
+
+&lt;p&gt;Spark 的"集群“不是提供运算服务的，而是一种资源分配的调度器。
+执行任务的 Spark 进程作为客户端向"集群"申请资源(运算节点), "集群"分配资源以后，
+这个 Spark 进程会分解一些计算工作，并把他们放到这些申请来的资源中运行。&lt;/p&gt;
+
+&lt;p&gt;提交给 Spark 执行的工作称做 &lt;code&gt;application&lt;/code&gt;(应用)，对应的主程序称作：&lt;code&gt;driver program&lt;/code&gt;。
+&lt;code&gt;driver program&lt;/code&gt; 通过一个叫做 &lt;code&gt;SparkContext&lt;/code&gt; 的对...&lt;/p&gt;</summary>
+    <content type="html">&lt;p&gt;本篇博客简述 Spark 集群相关的概念。&lt;/p&gt;
+
+&lt;h2&gt;概述&lt;/h2&gt;
+
+&lt;p&gt;Spark 的&amp;quot;集群&amp;ldquo;不是提供运算服务的，而是一种资源分配的调度器。
+执行任务的 Spark 进程作为客户端向&amp;quot;集群&amp;quot;申请资源(运算节点), &amp;quot;集群&amp;quot;分配资源以后，
+这个 Spark 进程会分解一些计算工作，并把他们放到这些申请来的资源中运行。&lt;/p&gt;
+
+&lt;p&gt;提交给 Spark 执行的工作称做 &lt;code&gt;application&lt;/code&gt;(应用)，对应的主程序称作：&lt;code&gt;driver program&lt;/code&gt;。
+&lt;code&gt;driver program&lt;/code&gt; 通过一个叫做 &lt;code&gt;SparkContext&lt;/code&gt; 的对象来协调 Spark 集群中不同进程的任务。&lt;/p&gt;
+
+&lt;p&gt;具体来说：&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;&lt;code&gt;driver program&lt;/code&gt; 向&amp;quot;集群&amp;quot;申请到得运算节点称作 worker node；&lt;/li&gt;
+&lt;li&gt;一旦申请到 worker node，&lt;code&gt;driver program&lt;/code&gt; 会连接这些 worker node, 并在 worker node 上创建(acquire)执行计算的进程(&lt;code&gt;executor&lt;/code&gt;);&lt;/li&gt;
+&lt;li&gt;接下来 &lt;code&gt;driver program&lt;/code&gt; 将计算需要的代码和数据发给 &lt;code&gt;executor&lt;/code&gt;；&lt;/li&gt;
+&lt;li&gt;最后 &lt;code&gt;SparkContext&lt;/code&gt; 将分解出来的 &lt;code&gt;task&lt;/code&gt;(任务) 发送给各个 &lt;code&gt;executor&lt;/code&gt; 去执行。&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;过程如下图所示：&lt;/p&gt;
+
+&lt;p&gt;&lt;img alt="Spark Cluster Overview" src="/images/spark-cluster-overview-d2fa24f9.png" /&gt;&lt;/p&gt;
+
+&lt;p&gt;这里有一些注意点：&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;每个 &lt;code&gt;application&lt;/code&gt; 都获得自己独立的 &lt;code&gt;executor&lt;/code&gt; 进程，这个&lt;code&gt;executor&lt;/code&gt;进程利用多个线程运行多个 &lt;code&gt;task&lt;/code&gt;。这样可以保证不同&lt;code&gt;application&lt;/code&gt;的隔离性，无论是调度端(&lt;code&gt;driver program&lt;/code&gt; 分解各自的 &lt;code&gt;task&lt;/code&gt;)，还是执行端(每个&lt;code&gt;executor&lt;/code&gt;只跑来自同一个 &lt;code&gt;application&lt;/code&gt; 的 &lt;code&gt;task&lt;/code&gt;)。不过这也意味着，不同的 &lt;code&gt;application&lt;/code&gt; 之间除非借助外部存储系统(例如数据库)，否则是不可以共享数据的。&lt;/li&gt;
+&lt;li&gt;Spark 是不需要知道运行在什么样的 &amp;quot;集群&amp;rdquo; 上的。Spark 只需要可以创建进程，并且和这些进程通信，无论是运行在什么样的集群上(eg. Mesos/YARN)都可以。&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;driver program&lt;/code&gt; 必须在整个生命周期中可以从不同的 &lt;code&gt;executor&lt;/code&gt; 接受连接。因此，&lt;code&gt;driver program&lt;/code&gt;对于 &lt;code&gt;executor&lt;/code&gt; 来说，
+必须是网路可及的。&lt;/li&gt;
+&lt;li&gt;因为由&lt;code&gt;driver program&lt;/code&gt;分解 &lt;code&gt;task&lt;/code&gt;，它必须和 &lt;code&gt;worker&lt;/code&gt; 节点很接近，最好在同一个局域网。
+如果你不能做到这一点(例如从远程提交 &lt;code&gt;application&lt;/code&gt;)，最好开一个 RPC，利用靠近 Spark 集群的机器来运行 &lt;code&gt;driver program&lt;/code&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h2&gt;Spark 集群的类型&lt;/h2&gt;
+
+&lt;p&gt;实现集群的程序称为：&lt;code&gt;集群管理器&lt;/code&gt;。目前有三种&lt;code&gt;集群管理器&lt;/code&gt;：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="http://spark.apache.org/docs/latest/spark-standalone.html"&gt;Standalone&lt;/a&gt; - 这个集群管理器打包在 spark 的程序里，是最简单的集群管理器。&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://spark.apache.org/docs/latest/running-on-mesos.html"&gt;Apache Mesos&lt;/a&gt; - 一个非常成熟的分布式操作系统，可以用来运行除 Spark 以外的很多系统。&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://spark.apache.org/docs/latest/running-on-yarn.html"&gt;Hadoop YARN&lt;/a&gt; - Hadoop 的 资源管理器。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2&gt;术语表&lt;/h2&gt;
+
+&lt;table&gt;&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;术语&lt;/th&gt;
+&lt;th&gt;解释&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;Application&lt;/td&gt;
+&lt;td&gt;在 Spark 上运行的工作， 由 &lt;code&gt;driver program&lt;/code&gt; 和 &lt;code&gt;executors&lt;/code&gt; 组成&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Application jar&lt;/td&gt;
+&lt;td&gt;包含 Application 代码的 jar 包。在一些应用场景中，jar 需要包含依赖的库。不过永远不要包含 Hadoop 和  Spark 的库&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Driver program&lt;/td&gt;
+&lt;td&gt;运行 Application 的&lt;code&gt;main()&lt;/code&gt; 函数的进程，并且 SparkContext 对象在此进程中创建&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Cluster manager(集群管理器)&lt;/td&gt;
+&lt;td&gt;实现集群的资源调度分配的外部程序&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Deploy mode&lt;/td&gt;
+&lt;td&gt;用于区分 &lt;code&gt;driver program&lt;/code&gt; 进程在哪里运行。&lt;code&gt;cluster&lt;/code&gt; 模式下，&lt;code&gt;driver&lt;/code&gt; 在集群中的节点上运行。 &lt;code&gt;client&lt;/code&gt; 模式下，&lt;code&gt;driver&lt;/code&gt; 在集群以外的地方运行&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Worker node&lt;/td&gt;
+&lt;td&gt;集群中运行程序的节点&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Executor&lt;/td&gt;
+&lt;td&gt;在 &lt;code&gt;worker node&lt;/code&gt; 中为 各 Application 创建的进程。它会执行 Application 相关的 task，将它们的数据保存在内存中或磁盘上。&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Task&lt;/td&gt;
+&lt;td&gt;执行具体计算的单元，会被发送给特定的 &lt;code&gt;executor&lt;/code&gt; 执行&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Job&lt;/td&gt;
+&lt;td&gt;一个由多个 &lt;code&gt;task&lt;/code&gt; 组成的并行计算集，它们生成 Spark 动作(eg. save, collect) 的结果。这个术语会出现在 &lt;code&gt;driver&lt;/code&gt; 的日志中&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Stage&lt;/td&gt;
+&lt;td&gt;每个 &lt;code&gt;job&lt;/code&gt; 会被分解成更小的 &lt;code&gt;task&lt;/code&gt; 的集合，这些集合被称作 &lt;code&gt;stage&lt;/code&gt;。它们彼此依赖(就像 MapReduce 中的 map 和 reduce 两个 &lt;code&gt;stage&lt;/code&gt;)；这个术语会出现在 &lt;code&gt;driver&lt;/code&gt; 的日志中&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;&lt;/table&gt;
+</content>
+  </entry>
+  <entry>
     <title>冲突的处理 - 分布式数据库相关理论 Part5</title>
     <link rel="alternate" href="/2015/04/29/冲突的处理.html"/>
     <id>/2015/04/29/冲突的处理.html</id>
@@ -752,104 +867,6 @@ value: ['news xx', 'news xyy', 'news yyz']
 然而性能的损失由写操作和读操作共同承担。这种做法叫做 &lt;code&gt;quorum&lt;/code&gt;。&lt;/p&gt;
 
 &lt;p&gt;&lt;img alt="fig4" src="/images/w+r&amp;gt;n-a4cdd279.png" /&gt;&lt;/p&gt;
-</content>
-  </entry>
-  <entry>
-    <title>Riak的分布式数据库模型 - 分布式数据库相关理论 Part3</title>
-    <link rel="alternate" href="/2015/04/25/Riak的分布式数据库模型.html"/>
-    <id>/2015/04/25/Riak的分布式数据库模型.html</id>
-    <published>2015-04-25T00:00:00+08:00</published>
-    <updated>2015-04-25T00:00:00+08:00</updated>
-    <author>
-      <name>Michael Ding</name>
-    </author>
-    <summary type="html">&lt;h2&gt;Riak 是什么&lt;/h2&gt;
-
-&lt;p&gt;Riak 是一个 erlang 开发的开源的分布式 key-value 数据库，
-在 &lt;code&gt;High Availability&lt;/code&gt;, &lt;code&gt;Fault Tolerance&lt;/code&gt;, &lt;code&gt;Scalability&lt;/code&gt; 方面表现优异。
-其实现受  &lt;a href="http://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf"&gt;Amazon Dynamodb&lt;/a&gt; 启发，是一个很有代表性的分布式数据库。&lt;/p&gt;
-
-&lt;p&gt;Riak 集群是一个去中心化的集群。每个服务器节点都是平等的，可以自由地添加和删除。
-这使得 Riak 的故障转移(Failure Over)和扩展非常容易。
-在 CAP 理论方面，Riak...&lt;/p&gt;</summary>
-    <content type="html">&lt;h2&gt;Riak 是什么&lt;/h2&gt;
-
-&lt;p&gt;Riak 是一个 erlang 开发的开源的分布式 key-value 数据库，
-在 &lt;code&gt;High Availability&lt;/code&gt;, &lt;code&gt;Fault Tolerance&lt;/code&gt;, &lt;code&gt;Scalability&lt;/code&gt; 方面表现优异。
-其实现受  &lt;a href="http://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf"&gt;Amazon Dynamodb&lt;/a&gt; 启发，是一个很有代表性的分布式数据库。&lt;/p&gt;
-
-&lt;p&gt;Riak 集群是一个去中心化的集群。每个服务器节点都是平等的，可以自由地添加和删除。
-这使得 Riak 的故障转移(Failure Over)和扩展非常容易。
-在 CAP 理论方面，Riak 可以自由地在 CP 和 AP 之间做平衡。&lt;/p&gt;
-
-&lt;h2&gt;理解 Riak 的分布式数据库模型&lt;/h2&gt;
-
-&lt;h3&gt;Riak 的数据冗余&lt;/h3&gt;
-
-&lt;p&gt;下面还是让我们从简单的例子开始，来理解下 Riak 的分布式数据库模型，包括数据的存储，节点服务器的，CAP理论的关系等。&lt;/p&gt;
-
-&lt;p&gt;首先让我们先定义一个概念：&lt;code&gt;N&lt;/code&gt;，表示数据的&amp;quot;份数&amp;ldquo;。在分布式数据库中，一份数据往往会存储多份拷贝(所谓冗余，或者 replications)&lt;/p&gt;
-
-&lt;p&gt;现在，假设我们有一个服务器节点(node1)，存有三个数据(key分别是 P0, P1, P2)，N = 1。那么可以想象，这三个数据都是存放在 node1 中。如下图所示：&lt;/p&gt;
-
-&lt;p&gt;&lt;img alt="fig1" src="/images/1-node-with-3-data-e7c30ed4.png" /&gt;&lt;/p&gt;
-
-&lt;p&gt;当 N = 2 时，假设 P0, P1, P2 的冗余数据分别是 R0, R1, R2， 那么可以想象，这6个数据也应该都存储在 node1 中，如 下图所示：&lt;/p&gt;
-
-&lt;p&gt;&lt;img alt="fig2" src="/images/1-node-with-3x2-data-90719dca.png" /&gt;&lt;/p&gt;
-
-&lt;p&gt;这时候，让我们把服务器节点增加到2个(node1, node2)，那么可以想象，6个数据有很多中组合方式，例如下面这两种：&lt;/p&gt;
-
-&lt;p&gt;&lt;img alt="fig3" src="/images/2-node-with-3x2-data-1-3864a6bb.png" /&gt;&lt;/p&gt;
-
-&lt;p&gt;&lt;img alt="fig4" src="/images/2-node-with-3x2-data-2-758f4a81.png" /&gt;&lt;/p&gt;
-
-&lt;p&gt;也许你发现了，他们有个共同点：&lt;strong&gt;同一个数据的冗余数据放在不同的服务器节点中&lt;/strong&gt;。这样就算一个节点删除(当机)了，集群的数据仍然能保证完整性。
-这为故障转移(Failure over)提供了基础。&lt;/p&gt;
-
-&lt;p&gt;那么现在的问题来了，&lt;strong&gt;是否有什么科学(公式化)的方式来找到分配这些数据的组合(之一)呢&lt;/strong&gt;？&lt;/p&gt;
-
-&lt;h3&gt;Riak Ring&lt;/h3&gt;
-
-&lt;p&gt;Riak 通过被称作 &lt;code&gt;Riak Ring&lt;/code&gt; 的东西来解决这个问题。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;首先&lt;/strong&gt;，Riak 将所有的 key 通过 hash 函数映射到一个 160 bit 的整数空间中。
-即一个 key 对应着一个 0 ~ 2^160 - 1 的整数。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;然后&lt;/strong&gt;，Riak 引入了 vnode(虚拟节点) 的概念，vnode 个数是可以配置的，默认是 64。
-160 bit 的整数会均匀的分布到所有的 vnode。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;最后&lt;/strong&gt;，这些 vnode 会&amp;quot;均匀地&amp;quot;分配到 物理节点上。具体的分配的方法很巧妙，通过 &lt;code&gt;Riak Ring&lt;/code&gt; 这样的东西。&lt;/p&gt;
-
-&lt;p&gt;下面我们用一幅图来具体解释下 &lt;code&gt;Riak Ring&lt;/code&gt;。图中，假设 vnode 32 个，服务器节点 4个。&lt;/p&gt;
-
-&lt;p&gt;&lt;img alt="fig5" src="/images/riak-ring-99006345.png" /&gt;&lt;/p&gt;
-
-&lt;p&gt;让我们把 160 bit 想像成一个环，环上的一小段代表一个 vnode。四种颜色分别代表 4 个服务器节点。&lt;/p&gt;
-
-&lt;p&gt;2^160 个整数按照从小到大的顺序均匀地分布到 32 个 vnode 中，例如 2^159 是第 17 个 vnode 上的第一个整数。&lt;/p&gt;
-
-&lt;p&gt;32 个 vnode 按照从小到大的顺序依次被分配到 4 个服务器节点上。即：&lt;/p&gt;
-
-&lt;ul&gt;
-&lt;li&gt;1, 5, 9&amp;hellip;29 vnode 分配给第1个服务器节点(node1)&lt;/li&gt;
-&lt;li&gt;2, 6, 10&amp;hellip;30 vnode 分配给第1个服务器节点(node2)&lt;/li&gt;
-&lt;li&gt;3, 7, 11&amp;hellip;31 vnode 分配给第1个服务器节点(node3)&lt;/li&gt;
-&lt;li&gt;4, 8, 12&amp;hellip;32 vnode 分配给第1个服务器节点(node4)&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;现在还剩下一个问题：&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;&lt;strong&gt;冗余数据的存储&lt;/strong&gt;&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;我们先假设 N = 3(即有2份冗余存储)&lt;/p&gt;
-
-&lt;p&gt;假设要存储的数据，key 为 &lt;code&gt;test-key&lt;/code&gt; ，根据 Riak Ring 算出来，应该存储在 vnode6(即：node2)上。
-那么 拷贝1 存储在 vnode7(即：node3)上，拷贝2 存储在 vnode8(即：node4)上。&lt;/p&gt;
-
-&lt;p&gt;所以 Riak 对于冗余数据的存储策略是：&lt;strong&gt;将冗余数据依次存到下一个vnode中&lt;/strong&gt;。&lt;/p&gt;
 </content>
   </entry>
 </feed>
