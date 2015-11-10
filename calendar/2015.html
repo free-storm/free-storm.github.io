@@ -124,6 +124,45 @@
 </div>
 <div class='large-9 large-pull-3 small-12 columns'>
 <div class='right-content'>
+<h2><a href="/2015/11/01/etcd-集群的管理.html">etcd 集群的管理 - 暴走漫画容器实践系列 Part4</a></h2>
+<div class='article-meta'>
+<ul class='no-bullet credit'>
+<li class='date'>
+<i class='fa fa-calendar'></i>
+<a href='/calendar/2015.html'>2015</a>&nbsp;/&nbsp;<a href='/calendar/2015/11.html'>11</a>&nbsp;/&nbsp;<a href='/calendar/2015/11/01.html'>1</a>
+</li>
+<li class='author'>
+<i class='fa fa-user'></i>
+Michael Ding
+</li>
+</ul>
+<div class='tags'>
+<a class="button secondary round extiny" href="/tags/分布式.html">分布式</a>
+<a class="button secondary round extiny" href="/tags/运维.html">运维</a>
+<a class="button secondary round extiny" href="/tags/容器.html">容器</a>
+<a class="button secondary round extiny" href="/tags/暴走漫画容器实践系列.html">暴走漫画容器实践系列</a>
+</div>
+</div>
+<div class='cell markdown'>
+<p>搭建完 <code>etcd</code> 集群后，接下来就是集群的管理了。集群的管理主要包括节点的重启，监控以及集群的运行时更改(Runtime Reconfiguration)。</p>
+
+<p>关于节点的重启、监控相对来说比较简单，这里主要介绍下集群的运行时更改。</p>
+
+<h2>1. 在什么情况下需要集群的运行时更改?</h2>
+
+<p>让我们来看看需要集群的运行时更改的几个场景。他们中的绝大多数只需要运用到重配置中的 “添加/删除” 节点操作的组合。</p>
+
+<h4>1.1. 维护和升级多个机器</h4>
+
+<ul>
+<li>如果你因为进行诸如硬件升级或者断网等计划维护，而需要移动多个节...</li>
+</ul>
+</div>
+<p class='readmore'>
+<a class="button primary radius small" href="/2015/11/01/etcd-集群的管理.html">阅读全文&rarr;</a>
+</p>
+
+<hr>
 <h2><a href="/2015/10/09/搭建-etcd-集群.html">搭建 etcd 集群 - 暴走漫画容器实践系列 Part3</a></h2>
 <div class='article-meta'>
 <ul class='no-bullet credit'>
@@ -439,41 +478,6 @@ Michael Ding
 </div>
 <p class='readmore'>
 <a class="button primary radius small" href="/2015/04/20/setup-docker-registry.html">阅读全文&rarr;</a>
-</p>
-
-<hr>
-<h2><a href="/2015/03/15/Redis-Can-t-save-in-background-fork-Cannot-allocate-memory.html">Redis 相关的 Linux 内核参数</a></h2>
-<div class='article-meta'>
-<ul class='no-bullet credit'>
-<li class='date'>
-<i class='fa fa-calendar'></i>
-<a href='/calendar/2015.html'>2015</a>&nbsp;/&nbsp;<a href='/calendar/2015/03.html'>3</a>&nbsp;/&nbsp;<a href='/calendar/2015/03/15.html'>15</a>
-</li>
-<li class='author'>
-<i class='fa fa-user'></i>
-Michael Ding
-</li>
-</ul>
-<div class='tags'>
-<a class="button secondary round extiny" href="/tags/数据库.html">数据库</a>
-<a class="button secondary round extiny" href="/tags/redis.html">Redis</a>
-</div>
-</div>
-<div class='cell markdown'>
-<h2>问题 1</h2>
-
-<p>默认情况下，redis 的持久化方案是 RDB，对于数据丢失的风险相对较高。
-如果对于持久化要求较高，一般会使用 AOF。</p>
-
-<p>不过使用 AOF 后，正常情况下，总会碰到 <code>Can’t save in background: fork: Cannot allocate memory</code> 这样的错误。</p>
-
-<p>这个错误会出现的原因如下：</p>
-
-<p>Redis 的后台持久化基于操作系统 <code>fork</code> 的 <code>copy-on-write</code>特性。redis 会 fork 一个子进程，这个子进程是
-父进程的完整拷贝。然...</p>
-</div>
-<p class='readmore'>
-<a class="button primary radius small" href="/2015/03/15/Redis-Can-t-save-in-background-fork-Cannot-allocate-memory.html">阅读全文&rarr;</a>
 </p>
 
 <div class='pagination-centered'>

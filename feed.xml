@@ -5,10 +5,255 @@
   <id>http://freestorm.org/</id>
   <link href="http://freestorm.org/"/>
   <link href="http://freestorm.org/feed.xml" rel="self"/>
-  <updated>2015-10-09T00:00:00+08:00</updated>
+  <updated>2015-11-01T00:00:00+08:00</updated>
   <author>
     <name>自由风暴</name>
   </author>
+  <entry>
+    <title>etcd 集群的管理 - 暴走漫画容器实践系列 Part4</title>
+    <link rel="alternate" href="/2015/11/01/etcd-集群的管理.html"/>
+    <id>/2015/11/01/etcd-集群的管理.html</id>
+    <published>2015-11-01T00:00:00+08:00</published>
+    <updated>2015-11-01T00:00:00+08:00</updated>
+    <author>
+      <name>Michael Ding</name>
+    </author>
+    <summary type="html">&lt;p&gt;搭建完 &lt;code&gt;etcd&lt;/code&gt; 集群后，接下来就是集群的管理了。集群的管理主要包括节点的重启，监控以及集群的运行时更改(Runtime Reconfiguration)。&lt;/p&gt;
+
+&lt;p&gt;关于节点的重启、监控相对来说比较简单，这里主要介绍下集群的运行时更改。&lt;/p&gt;
+
+&lt;h2&gt;1. 在什么情况下需要集群的运行时更改?&lt;/h2&gt;
+
+&lt;p&gt;让我们来看看需要集群的运行时更改的几个场景。他们中的绝大多数只需要运用到重配置中的 “添加/删除” 节点操作的组合。&lt;/p&gt;
+
+&lt;h4&gt;1.1. 维护和升级多个机器&lt;/h4&gt;
+
+&lt;ul&gt;
+&lt;li&gt;如果你因为进行诸如硬件升级或者断网等计划维护，而需要移动多个节...&lt;/li&gt;
+&lt;/ul&gt;</summary>
+    <content type="html">&lt;p&gt;搭建完 &lt;code&gt;etcd&lt;/code&gt; 集群后，接下来就是集群的管理了。集群的管理主要包括节点的重启，监控以及集群的运行时更改(Runtime Reconfiguration)。&lt;/p&gt;
+
+&lt;p&gt;关于节点的重启、监控相对来说比较简单，这里主要介绍下集群的运行时更改。&lt;/p&gt;
+
+&lt;h2&gt;1. 在什么情况下需要集群的运行时更改?&lt;/h2&gt;
+
+&lt;p&gt;让我们来看看需要集群的运行时更改的几个场景。他们中的绝大多数只需要运用到重配置中的 “添加/删除” 节点操作的组合。&lt;/p&gt;
+
+&lt;h4&gt;1.1. 维护和升级多个机器&lt;/h4&gt;
+
+&lt;ul&gt;
+&lt;li&gt;如果你因为进行诸如硬件升级或者断网等计划维护，而需要移动多个节点到新机器上，最好是逐个节点移动，一次操作一个。&lt;/li&gt;
+&lt;li&gt;移动 leader 节点是安全的，只不过 leader 节点下线后，需要耗费更多的时间选举新节点，所以建议最后移动。&lt;/li&gt;
+&lt;li&gt;如果你的集群有超过 50M 的数据，最好进行节点的迁移(见3.1节 迁移节点)，而不要通过删除旧节点，增加新节点来实现节点的移动。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h4&gt;1.2. 更改集群的大小&lt;/h4&gt;
+
+&lt;p&gt;如上一篇博客所说的，增加集群节点的个数，容错能力越强，读性能也越好。不过相应的，写性能也会下降。减少集群节点的个数，容错能力下降，不过写性能也会提高。&lt;/p&gt;
+
+&lt;p&gt;更改集群大小也需要集群运行时更改。&lt;/p&gt;
+
+&lt;h4&gt;1.3. 替换一个坏掉的节点&lt;/h4&gt;
+
+&lt;p&gt;如果一个节点的机器因为硬件出错而宕机了，那需要尽快用新机器替换。替换的操作就是简单地分为两步：(通过集群运行时更改)先删除坏掉的节点，再添加新的节点(见2节 集群节点的操作)。不过，如果你的集群有超过 50M 的数据，最好进行节点迁移(见3.1节 迁移节点)&lt;/p&gt;
+
+&lt;h4&gt;1.4. 集群多数宕机(Majority Failure)后的重启&lt;/h4&gt;
+
+&lt;p&gt;如果你的集群出现了多数宕机(例如超过(N-1)/2的节点当机)，或者所有的节点都更改了 IP，你就需要手动操作，重启(恢复)集群了。基本步骤包括：1.基于原先的数据创建新集群；2.强制让一个节点成为 &lt;code&gt;leader&lt;/code&gt; 节点，并最终通过运行时更改添加新节点的方式将其他节点添加到这个新的集群中。&lt;/p&gt;
+
+&lt;h2&gt;2. 集群运行时更改的操作&lt;/h2&gt;
+
+&lt;p&gt;知道了什么样的情况下需要运行时更改，下面让我们来了解下具体的运行时更改的操作。&lt;/p&gt;
+
+&lt;p&gt;一般来说，这些操作需要确保集群的多数节点是正常服务的，并且一次只操作一个节点。&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;升级单个节点的 peerURLs，需要执行一个更新节点操作&lt;/li&gt;
+&lt;li&gt;替换一个节点，需要先执行一个添加节点操作，再执行一个删除节点操作&lt;/li&gt;
+&lt;li&gt;将集群大小从 3 更改到 5，需要执行两个添加节点操作&lt;/li&gt;
+&lt;li&gt;将集群大小从 5 降低到 3，需要执行两个删除节点操作&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;下面的所有例子都是利用 &lt;code&gt;etcdctl&lt;/code&gt; 命令实现操作，其本质是调用 &lt;code&gt;etcd&lt;/code&gt; 的 REST API。你也可以使用其他你习惯的客户端。&lt;/p&gt;
+
+&lt;h4&gt;2.1 更新一个节点&lt;/h4&gt;
+
+&lt;p&gt;如果你想更新一个节点的 IP(peerURLS)，首先你需要知道那个节点的 ID。你可以列出所有节点，找出对应节点的 ID。&lt;/p&gt;
+&lt;pre&gt;&lt;code class="highlight plaintext"&gt;$ etcdctl member list
+6e3bd23ae5f1eae0: name=node2 peerURLs=http://localhost:23802 clientURLs=http://127.0.0.1:23792
+924e2e83e93f2560: name=node3 peerURLs=http://localhost:23803 clientURLs=http://127.0.0.1:23793
+a8266ecf031671f3: name=node1 peerURLs=http://localhost:23801 clientURLs=http://127.0.0.1:23791
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;在本例中，我们假设要更新 ID 为 &lt;code&gt;a8266ecf031671f3&lt;/code&gt; 的节点的 peerURLs 为：&lt;code&gt;http://10.0.1.10:2380&lt;/code&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code class="highlight plaintext"&gt;$ etcdctl member update a8266ecf031671f3 http://10.0.1.10:2380
+Updated member with ID a8266ecf031671f3 in cluster
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4&gt;2.2 删除一个节点&lt;/h4&gt;
+
+&lt;p&gt;假设我们要删除 ID 为 &lt;code&gt;a8266ecf031671f3&lt;/code&gt; 的节点&lt;/p&gt;
+&lt;pre&gt;&lt;code class="highlight plaintext"&gt;$ etcdctl member remove a8266ecf031671f3
+Removed member a8266ecf031671f3 from cluster
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;执行完后，目标节点会自动停止服务，并且打印一行日志：&lt;/p&gt;
+&lt;pre&gt;&lt;code class="highlight plaintext"&gt;etcd: this member has been permanently removed from the cluster. Exiting.
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;如果删除的是 &lt;code&gt;leader&lt;/code&gt; 节点，则需要耗费额外的时间重新选举 &lt;code&gt;leader&lt;/code&gt;。&lt;/p&gt;
+
+&lt;h4&gt;2.3 增加一个新的节点&lt;/h4&gt;
+
+&lt;p&gt;增加一个新的节点分为两步：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;通过 &lt;code&gt;etcdctl&lt;/code&gt; 或对应的 API 注册新节点&lt;/li&gt;
+&lt;li&gt;使用恰当的参数启动新节点&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;先看第一步，假设我们要新加的节点取名为 infra3, &lt;code&gt;peerURLs&lt;/code&gt; 是 http://10.0.1.13:2380&lt;/p&gt;
+&lt;pre&gt;&lt;code class="highlight plaintext"&gt;$ etcdctl member add infra3 http://10.0.1.13:2380
+added member 9bf1b35fc7761a23 to cluster
+
+ETCD_NAME="infra3"
+ETCD_INITIAL_CLUSTER="infra0=http://10.0.1.10:2380,infra1=http://10.0.1.11:2380,infra2=http://10.0.1.12:2380,infra3=http://10.0.1.13:2380"
+ETCD_INITIAL_CLUSTER_STATE=existing
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;code&gt;etcdctl&lt;/code&gt; 在注册完新节点后，会返回一段提示，包含3个环境变量。然后在第二部启动新节点的时候，带上这3个环境变量即可。&lt;/p&gt;
+&lt;pre&gt;&lt;code class="highlight plaintext"&gt;$ export ETCD_NAME="infra3"
+$ export ETCD_INITIAL_CLUSTER="infra0=http://10.0.1.10:2380,infra1=http://10.0.1.11:2380,infra2=http://10.0.1.12:2380,infra3=http://10.0.1.13:2380"
+$ export ETCD_INITIAL_CLUSTER_STATE=existing
+$ etcd -listen-client-urls http://10.0.1.13:2379 -advertise-client-urls http://10.0.1.13:2379  -listen-peer-urls http://10.0.1.13:2380 -initial-advertise-peer-urls http://10.0.1.13:2380 -data-dir %data_dir%
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;这样，新节点就会运行起来并且加入到已有的集群中了。&lt;/p&gt;
+
+&lt;p&gt;值得注意的是，如果原先的集群只有1个节点，在新节点成功启动之前，新集群并不能正确的形成。因为原先的单节点集群无法完成&lt;code&gt;leader&lt;/code&gt;的选举。
+直到新节点启动完，和原先的节点建立连接以后，新集群才能正确形成。&lt;/p&gt;
+
+&lt;h2&gt;3. 迁移节点和灾难恢复&lt;/h2&gt;
+
+&lt;h4&gt;3.1 迁移节点&lt;/h4&gt;
+
+&lt;p&gt;移动节点有两种方式：1. 删除旧的节点，增加新的节点; 2. 迁移节点。当集群的数据超过 50M 的时候，建议通过迁移节点的方式来移动节点。&lt;/p&gt;
+
+&lt;p&gt;迁移节点的核心就是数据目录的迁移。因为 etcd 的各个节点会将自己的 ID 存放在自己的数据目录下面，所以迁移节点不会改变节点的 ID。&lt;/p&gt;
+
+&lt;p&gt;迁移节点的步骤简单来说，包括以下几步：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;停止需要迁移的节点的服务&lt;/li&gt;
+&lt;li&gt;从老机器上拷贝数据目录到新机器上&lt;/li&gt;
+&lt;li&gt;通过集群运行时更改的更新操作，改变节点的 peerURLs 值为新机器的 IP:port&lt;/li&gt;
+&lt;li&gt;在新机器上指定拷贝过来的数据目录，启动 etcd 的节点服务&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;下面通过一个例子具体说明。&lt;/p&gt;
+
+&lt;p&gt;假设我们已有的集群是这样的：&lt;/p&gt;
+
+&lt;table&gt;&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;name&lt;/th&gt;
+&lt;th&gt;peerURLs&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;infra0&lt;/td&gt;
+&lt;td&gt;10.0.1.10:2380&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;infra1&lt;/td&gt;
+&lt;td&gt;10.0.1.11:2380&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;infra2&lt;/td&gt;
+&lt;td&gt;10.0.1.12:2380&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;&lt;/table&gt;
+&lt;pre&gt;&lt;code class="highlight plaintext"&gt;$ etcdctl member list
+84194f7c5edd8b37: name=infra0 peerURLs=http://10.0.1.10:2380 clientURLs=http://127.0.0.1:2379,http://10.0.1.10:2379
+b4db3bf5e495e255: name=infra1 peerURLs=http://10.0.1.11:2380 clientURLs=http://127.0.0.1:2379,http://10.0.1.11:2379
+bc1083c870280d44: name=infra2 peerURLs=http://10.0.1.12:2380 clientURLs=http://127.0.0.1:2379,http://10.0.1.12:2379
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;我们要移动 infra1 从 10.0.1.11 到 10.0.1.13&lt;/p&gt;
+
+&lt;h6&gt;1. 停止 infra1 的 &lt;code&gt;etcd&lt;/code&gt; 进程&lt;/h6&gt;
+&lt;pre&gt;&lt;code class="highlight plaintext"&gt;$ssh 10.0.1.11
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code class="highlight plaintext"&gt;$ kill `pgrep etcd`
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h6&gt;2. 从 10.0.1.11 拷贝etcd的数据目录到 10.0.1.13 的机器上&lt;/h6&gt;
+&lt;pre&gt;&lt;code class="highlight plaintext"&gt;$ tar -cvzf infra1.etcd.tar.gz %data_dir%
+$ scp infra1.etcd.tar.gz 10.0.1.13:~/
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h6&gt;3. 变更 infra1 的 peerURLs&lt;/h6&gt;
+&lt;pre&gt;&lt;code class="highlight plaintext"&gt;$ curl http://10.0.1.10:2379/v2/members/b4db3bf5e495e255 -XPUT \
+-H "Content-Type: application/json" -d '{"peerURLs":["http://10.0.1.13:2380"]}'
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;或者利用 &lt;code&gt;etcdctl&lt;/code&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code class="highlight plaintext"&gt;etcdctl member update b4db3bf5e495e255 http://10.0.1.13:2380
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h6&gt;# 4. 在新机器上使用 infra1 的数据和配置启动 etcd&lt;/h6&gt;
+&lt;pre&gt;&lt;code class="highlight plaintext"&gt;$ ssh 10.0.1.13
+$ tar -xzvf infra1.etcd.tar.gz -C %data_dir%
+$ etcd -name infra1 \
+&amp;gt; -listen-peer-urls http://10.0.1.13:2380 \
+&amp;gt; -listen-client-urls http://10.0.1.13:2379,http://127.0.0.1:2379 \
+&amp;gt; -advertise-client-urls http://10.0.1.13:2379,http://127.0.0.1:2379
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4&gt;3.2 灾难恢复&lt;/h4&gt;
+
+&lt;p&gt;总的来说，etcd 的集群还是相当可靠的，但是也不能排除极端情况的出现。当出现灾难性的多数节点宕机，就不得不进行灾难恢复了。&lt;/p&gt;
+
+&lt;p&gt;灾难恢复需要以下几个步骤：&lt;/p&gt;
+
+&lt;h6&gt;1 备份数据&lt;/h6&gt;
+
+&lt;p&gt;备份操作需要在一台还&amp;#39;活着&amp;#39;的节点上进行&lt;/p&gt;
+&lt;pre&gt;&lt;code class="highlight plaintext"&gt;$ etcdctl backup \
+      --data-dir %data_dir% \
+      --backup-dir %backup_data_dir%
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;这个命令会备份原数据到 %backup&lt;em&gt;data&lt;/em&gt;dir% 目录下，并重新相关的元数据(例如 节点的 id 和 集群的 id)。
+这意味着在 %backup&lt;em&gt;data&lt;/em&gt;dir% 中只包含原先的数据，而不包含原先的身份信息。&lt;/p&gt;
+
+&lt;p&gt;接下来我们就可以基于备份的数据创建一个单节点的集群。&lt;/p&gt;
+
+&lt;h6&gt;2 从备份数据中重建单节点集群&lt;/h6&gt;
+&lt;pre&gt;&lt;code class="highlight plaintext"&gt;$ etcd \
+      -data-dir=%backup_data_dir% \
+      -force-new-cluster \
+      ...
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;code&gt;...&lt;/code&gt;部分省略了其他相关的参数，例如&lt;code&gt;-peer-urls&lt;/code&gt; &lt;code&gt;-client-urls&lt;/code&gt; 等等&lt;/p&gt;
+
+&lt;p&gt;这时候，应该就成功创建了一个新的只包含一个节点的集群，并包含之前的所有数据。
+当你确认新集群正常后，就可以删除原来集群的数据，暂停新集群，将新集群的数据目录拷贝回原先数据的位置，并重新启动。&lt;/p&gt;
+&lt;pre&gt;&lt;code class="highlight plaintext"&gt;$ pkill etcd
+$ rm -rf %data_dir%
+$ mv %backup_data_dir% %data_dir%
+$ etcd \
+    -data-dir=%data_dir% \
+    ...
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h6&gt;3 恢复集群&lt;/h6&gt;
+
+&lt;p&gt;现在已经有了一个拥有之前数据的单节点的集群了。接下来，你可以通过添加节点的操作，重建出一个同样大小的集群。
+值得注意的是，如果你还是使用之前的其他机器来重建这个新的集群，一定杀掉之前的etcd 进程，并且清除掉之前的数据。&lt;/p&gt;
+</content>
+  </entry>
   <entry>
     <title>搭建 etcd 集群 - 暴走漫画容器实践系列 Part3</title>
     <link rel="alternate" href="/2015/10/09/搭建-etcd-集群.html"/>
@@ -100,6 +345,11 @@
 &lt;td&gt;&lt;strong&gt;4&lt;/strong&gt;&lt;/td&gt;
 &lt;/tr&gt;
 &lt;/tbody&gt;&lt;/table&gt;
+
+&lt;h3&gt;peer urls 和 client urls&lt;/h3&gt;
+
+&lt;p&gt;&lt;code&gt;peer urls&lt;/code&gt; 是不同的 etcd 节点之间进行通信的 urls
+&lt;code&gt;client urls&lt;/code&gt; 是接受客户端(例如 curl/etcdctl) 请求的 urls&lt;/p&gt;
 
 &lt;h2&gt;2. etcd 集群的搭建(初始化一个 etcd 集群)&lt;/h2&gt;
 
@@ -833,104 +1083,6 @@ value: ['news xx', 'news xyy', 'news yyz']
 然而性能的损失由写操作和读操作共同承担。这种做法叫做 &lt;code&gt;quorum&lt;/code&gt;。&lt;/p&gt;
 
 &lt;p&gt;&lt;img alt="fig4" src="/images/w+r&amp;gt;n-a4cdd279.png" /&gt;&lt;/p&gt;
-</content>
-  </entry>
-  <entry>
-    <title>Riak的分布式数据库模型 - 分布式数据库相关理论 Part3</title>
-    <link rel="alternate" href="/2015/04/25/Riak的分布式数据库模型.html"/>
-    <id>/2015/04/25/Riak的分布式数据库模型.html</id>
-    <published>2015-04-25T00:00:00+08:00</published>
-    <updated>2015-04-25T00:00:00+08:00</updated>
-    <author>
-      <name>Michael Ding</name>
-    </author>
-    <summary type="html">&lt;h2&gt;Riak 是什么&lt;/h2&gt;
-
-&lt;p&gt;Riak 是一个 erlang 开发的开源的分布式 key-value 数据库，
-在 &lt;code&gt;High Availability&lt;/code&gt;, &lt;code&gt;Fault Tolerance&lt;/code&gt;, &lt;code&gt;Scalability&lt;/code&gt; 方面表现优异。
-其实现受  &lt;a href="http://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf"&gt;Amazon Dynamodb&lt;/a&gt; 启发，是一个很有代表性的分布式数据库。&lt;/p&gt;
-
-&lt;p&gt;Riak 集群是一个去中心化的集群。每个服务器节点都是平等的，可以自由地添加和删除。
-这使得 Riak 的故障转移(Failure Over)和扩展非常容易。
-在 CAP 理论方面，Riak...&lt;/p&gt;</summary>
-    <content type="html">&lt;h2&gt;Riak 是什么&lt;/h2&gt;
-
-&lt;p&gt;Riak 是一个 erlang 开发的开源的分布式 key-value 数据库，
-在 &lt;code&gt;High Availability&lt;/code&gt;, &lt;code&gt;Fault Tolerance&lt;/code&gt;, &lt;code&gt;Scalability&lt;/code&gt; 方面表现优异。
-其实现受  &lt;a href="http://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf"&gt;Amazon Dynamodb&lt;/a&gt; 启发，是一个很有代表性的分布式数据库。&lt;/p&gt;
-
-&lt;p&gt;Riak 集群是一个去中心化的集群。每个服务器节点都是平等的，可以自由地添加和删除。
-这使得 Riak 的故障转移(Failure Over)和扩展非常容易。
-在 CAP 理论方面，Riak 可以自由地在 CP 和 AP 之间做平衡。&lt;/p&gt;
-
-&lt;h2&gt;理解 Riak 的分布式数据库模型&lt;/h2&gt;
-
-&lt;h3&gt;Riak 的数据冗余&lt;/h3&gt;
-
-&lt;p&gt;下面还是让我们从简单的例子开始，来理解下 Riak 的分布式数据库模型，包括数据的存储，节点服务器的，CAP理论的关系等。&lt;/p&gt;
-
-&lt;p&gt;首先让我们先定义一个概念：&lt;code&gt;N&lt;/code&gt;，表示数据的&amp;quot;份数&amp;ldquo;。在分布式数据库中，一份数据往往会存储多份拷贝(所谓冗余，或者 replications)&lt;/p&gt;
-
-&lt;p&gt;现在，假设我们有一个服务器节点(node1)，存有三个数据(key分别是 P0, P1, P2)，N = 1。那么可以想象，这三个数据都是存放在 node1 中。如下图所示：&lt;/p&gt;
-
-&lt;p&gt;&lt;img alt="fig1" src="/images/1-node-with-3-data-e7c30ed4.png" /&gt;&lt;/p&gt;
-
-&lt;p&gt;当 N = 2 时，假设 P0, P1, P2 的冗余数据分别是 R0, R1, R2， 那么可以想象，这6个数据也应该都存储在 node1 中，如 下图所示：&lt;/p&gt;
-
-&lt;p&gt;&lt;img alt="fig2" src="/images/1-node-with-3x2-data-90719dca.png" /&gt;&lt;/p&gt;
-
-&lt;p&gt;这时候，让我们把服务器节点增加到2个(node1, node2)，那么可以想象，6个数据有很多中组合方式，例如下面这两种：&lt;/p&gt;
-
-&lt;p&gt;&lt;img alt="fig3" src="/images/2-node-with-3x2-data-1-3864a6bb.png" /&gt;&lt;/p&gt;
-
-&lt;p&gt;&lt;img alt="fig4" src="/images/2-node-with-3x2-data-2-758f4a81.png" /&gt;&lt;/p&gt;
-
-&lt;p&gt;也许你发现了，他们有个共同点：&lt;strong&gt;同一个数据的冗余数据放在不同的服务器节点中&lt;/strong&gt;。这样就算一个节点删除(当机)了，集群的数据仍然能保证完整性。
-这为故障转移(Failure over)提供了基础。&lt;/p&gt;
-
-&lt;p&gt;那么现在的问题来了，&lt;strong&gt;是否有什么科学(公式化)的方式来找到分配这些数据的组合(之一)呢&lt;/strong&gt;？&lt;/p&gt;
-
-&lt;h3&gt;Riak Ring&lt;/h3&gt;
-
-&lt;p&gt;Riak 通过被称作 &lt;code&gt;Riak Ring&lt;/code&gt; 的东西来解决这个问题。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;首先&lt;/strong&gt;，Riak 将所有的 key 通过 hash 函数映射到一个 160 bit 的整数空间中。
-即一个 key 对应着一个 0 ~ 2^160 - 1 的整数。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;然后&lt;/strong&gt;，Riak 引入了 vnode(虚拟节点) 的概念，vnode 个数是可以配置的，默认是 64。
-160 bit 的整数会均匀的分布到所有的 vnode。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;最后&lt;/strong&gt;，这些 vnode 会&amp;quot;均匀地&amp;quot;分配到 物理节点上。具体的分配的方法很巧妙，通过 &lt;code&gt;Riak Ring&lt;/code&gt; 这样的东西。&lt;/p&gt;
-
-&lt;p&gt;下面我们用一幅图来具体解释下 &lt;code&gt;Riak Ring&lt;/code&gt;。图中，假设 vnode 32 个，服务器节点 4个。&lt;/p&gt;
-
-&lt;p&gt;&lt;img alt="fig5" src="/images/riak-ring-99006345.png" /&gt;&lt;/p&gt;
-
-&lt;p&gt;让我们把 160 bit 想像成一个环，环上的一小段代表一个 vnode。四种颜色分别代表 4 个服务器节点。&lt;/p&gt;
-
-&lt;p&gt;2^160 个整数按照从小到大的顺序均匀地分布到 32 个 vnode 中，例如 2^159 是第 17 个 vnode 上的第一个整数。&lt;/p&gt;
-
-&lt;p&gt;32 个 vnode 按照从小到大的顺序依次被分配到 4 个服务器节点上。即：&lt;/p&gt;
-
-&lt;ul&gt;
-&lt;li&gt;1, 5, 9&amp;hellip;29 vnode 分配给第1个服务器节点(node1)&lt;/li&gt;
-&lt;li&gt;2, 6, 10&amp;hellip;30 vnode 分配给第1个服务器节点(node2)&lt;/li&gt;
-&lt;li&gt;3, 7, 11&amp;hellip;31 vnode 分配给第1个服务器节点(node3)&lt;/li&gt;
-&lt;li&gt;4, 8, 12&amp;hellip;32 vnode 分配给第1个服务器节点(node4)&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;现在还剩下一个问题：&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;&lt;strong&gt;冗余数据的存储&lt;/strong&gt;&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;我们先假设 N = 3(即有2份冗余存储)&lt;/p&gt;
-
-&lt;p&gt;假设要存储的数据，key 为 &lt;code&gt;test-key&lt;/code&gt; ，根据 Riak Ring 算出来，应该存储在 vnode6(即：node2)上。
-那么 拷贝1 存储在 vnode7(即：node3)上，拷贝2 存储在 vnode8(即：node4)上。&lt;/p&gt;
-
-&lt;p&gt;所以 Riak 对于冗余数据的存储策略是：&lt;strong&gt;将冗余数据依次存到下一个vnode中&lt;/strong&gt;。&lt;/p&gt;
 </content>
   </entry>
 </feed>
